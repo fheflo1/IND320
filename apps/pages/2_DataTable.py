@@ -14,7 +14,8 @@ def load_data() -> pd.DataFrame:
     df = pd.read_csv(data_file)
     return df
 
-#st.column_config.LineChartColumn()
+
+# st.column_config.LineChartColumn()
 df = load_data()
 st.subheader("Raw Data (First 100 Rows)")
 
@@ -29,7 +30,9 @@ fm = df[df["time"].dt.to_period("M") == first_month].reset_index(drop=True)
 num_cols = fm.select_dtypes(include="number").columns.tolist()
 
 # Bygg en rad per kolonne med verdiene for første måned som liste
-rows = [{"column": col, "first_month": fm[col].astype(float).tolist()} for col in num_cols]
+rows = [
+    {"column": col, "first_month": fm[col].astype(float).tolist()} for col in num_cols
+]
 df_rows = pd.DataFrame(rows)
 
 st.subheader("Line Chart of Raw Data for First Month")
@@ -40,8 +43,10 @@ st.dataframe(
         "column": st.column_config.TextColumn("Column", width="small"),
         "first_month": st.column_config.LineChartColumn(
             "First month (values)",
-            help="Values for the first month in the dataset", 
-            width="large", y_min=None, y_max=None
+            help="Values for the first month in the dataset",
+            width="large",
+            y_min=None,
+            y_max=None,
         ),
     },
     hide_index=True,
@@ -51,9 +56,3 @@ st.dataframe(
 )
 
 st.caption(f"Shows first month: {first_month}. Non-numeric columns are excluded.")
-
-
-
-
-
-
