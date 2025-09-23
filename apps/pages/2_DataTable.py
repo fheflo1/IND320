@@ -7,7 +7,7 @@ st.title("📄 DataTable")
 @st.cache_data
 def load_data() -> pd.DataFrame:
     # `pages/` → repo-rot er én mappe opp
-    project_root = Path().cwd().parent
+    project_root = Path().cwd()
     data_file = project_root / "data" / "open-meteo-subset.csv"
 
     df = pd.read_csv(data_file)

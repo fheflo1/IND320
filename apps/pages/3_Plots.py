@@ -8,12 +8,16 @@ st.title("📈 Plots")
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    project_root = Path(__file__).resolve().parents[1]
-    return pd.read_csv(project_root / "data" / "open-meteo-subset.csv")
+    # `pages/` → repo-rot er én mappe opp
+    project_root = Path().cwd()
+    data_file = project_root / "data" / "open-meteo-subset.csv"
+
+    df = pd.read_csv(data_file)
+    return df
 
 df = load_data()
 df["time"] = pd.to_datetime(df["time"])
-
+    
 # Velg kolonne(r)
 cols_all = [c for c in df.columns if c != "time"]
 choice = st.selectbox("Velg kolonne", options=["(Alle)"] + cols_all, index=0)
