@@ -6,6 +6,7 @@ import matplotlib.dates as mdates
 
 st.title("📈 Plots")
 
+
 @st.cache_data
 def load_data() -> pd.DataFrame:
     # `pages/` → repo-rot er én mappe opp
@@ -15,9 +16,10 @@ def load_data() -> pd.DataFrame:
     df = pd.read_csv(data_file)
     return df
 
+
 df = load_data()
 df["time"] = pd.to_datetime(df["time"])
-    
+
 # Velg kolonne(r)
 cols_all = [c for c in df.columns if c != "time"]
 choice = st.selectbox("Velg kolonne", options=["(Alle)"] + cols_all, index=0)
@@ -39,7 +41,9 @@ else:
     ax.plot(dfm["time"], dfm[choice], lw=1.5, label=choice)
     ax.legend(fontsize=9)
 
-ax.set_title(f"Tidsserie – {choice if choice!='(Alle)' else 'alle kolonner'} ({month_sel})")
+ax.set_title(
+    f"Tidsserie – {choice if choice!='(Alle)' else 'alle kolonner'} ({month_sel})"
+)
 ax.set_xlabel("Tid")
 ax.set_ylabel("Verdi")
 ax.xaxis.set_major_locator(mdates.DayLocator(interval=3))
@@ -47,4 +51,6 @@ ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
 ax.grid(alpha=0.3)
 
 st.pyplot(fig)
-st.caption("Tips: Denne siden er bare et utgangspunkt – du kan senere legge til flere filtre og styling.")
+st.caption(
+    "Tips: Denne siden er bare et utgangspunkt – du kan senere legge til flere filtre og styling."
+)
