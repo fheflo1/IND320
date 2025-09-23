@@ -16,7 +16,9 @@ def load_data() -> pd.DataFrame:
 
 #st.column_config.LineChartColumn()
 df = load_data()
-st.subheader("Raw Data")
+st.subheader("Raw Data (First 100 Rows)")
+
+st.dataframe(df.head(100), width="stretch")
 
 # Finn første måned i datasettet og filtrer til den
 df["time"] = pd.to_datetime(df["time"])
@@ -29,6 +31,8 @@ num_cols = fm.select_dtypes(include="number").columns.tolist()
 # Bygg en rad per kolonne med verdiene for første måned som liste
 rows = [{"column": col, "first_month": fm[col].astype(float).tolist()} for col in num_cols]
 df_rows = pd.DataFrame(rows)
+
+st.subheader("Line Chart of Raw Data for First Month")
 
 st.dataframe(
     df_rows,
