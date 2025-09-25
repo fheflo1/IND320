@@ -1,9 +1,5 @@
 import streamlit as st
 
-st.title("🏠 Hjem")
-st.write(
-    "Dette er en egen ‘Home’-side (valgfritt). "
-    "Du kan beholde både denne og forsiden i `app.py`, eller fjerne denne senere."
-)
+st.title("🏠 Home")
 
-st.info("Tips: Sidemenyen inneholder snarveier til de andre sidene.")
+st.info("Tip: The sidebar contains shortcuts to the other pages.")
