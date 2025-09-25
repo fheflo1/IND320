@@ -9,7 +9,9 @@ st.title("📈 Plots")
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    df = pd.read_csv(Path().cwd() / "data" / "open-meteo-subset.csv")
+    project_root = Path(__file__).resolve().parents[2]
+    csv_path = project_root / "data" / "open-meteo-subset.csv"
+    df = pd.read_csv(csv_path)
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
     return df.dropna(subset=["time"])
 

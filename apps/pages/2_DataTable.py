@@ -7,12 +7,10 @@ st.title("📄 DataTable")
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    # `pages/` → repo-rot er én mappe opp
-    project_root = Path().cwd()
-    data_file = project_root / "data" / "open-meteo-subset.csv"
-
-    df = pd.read_csv(data_file)
-    return df
+    # 2 nivå opp fra apps/pages → prosjektrot
+    project_root = Path(__file__).resolve().parents[2]
+    csv_path = project_root / "data" / "open-meteo-subset.csv"
+    return pd.read_csv(csv_path)
 
 
 # st.column_config.LineChartColumn()
