@@ -10,7 +10,7 @@ The first part of the project is a dashboard built with Streamlit (link below). 
 https://github.com/fheflo1/IND320
 
 - Contains all the code behind the Streamlit app.
-- Includes a PDF describing AI usage and the development workflow.
+- src: Includes a PDF describing AI usage and the development workflow.
 
 ### Streamlit App:
 https://ind320-fheflo1.streamlit.app/
