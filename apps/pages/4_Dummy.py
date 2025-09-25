@@ -1,4 +1,4 @@
-import streamlit as st
+# import streamlit as st
 
-st.title("🧪 Dummy-side")
-st.write("Midlertidig plassholder for fremtidig innhold.")
+# st.title("🧪 Dummy page")
+# st.write("Temporary placeholder for future content.")

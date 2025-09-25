@@ -1,9 +1,12 @@
 import streamlit as st
 
-st.title("🏠 Hjem")
+st.title("🏠 Home")
 st.write(
-    "Dette er en egen ‘Home’-side (valgfritt). "
-    "Du kan beholde både denne og forsiden i `app.py`, eller fjerne denne senere."
+    """
+    This is a Streamlit app for the course IND320: Data to Decisions.
+    So far, it contains interesting pages about meteorological data from Norway.
+    Use the sidebar to navigate between the pages.
+    """
 )
 
-st.info("Tips: Sidemenyen inneholder snarveier til de andre sidene.")
+st.info("Tip: The sidebar contains shortcuts to the other pages.")

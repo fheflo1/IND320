@@ -13,4 +13,4 @@ with st.sidebar:
     st.page_link("app.py", label="🏠 Hjem")
     st.page_link("pages/2_DataTable.py", label="📄 DataTable")
     st.page_link("pages/3_Plots.py", label="📈 Plots")
-    st.page_link("pages/4_Dummy.py", label="🧪 Dummy")
+    # st.page_link("pages/4_Dummy.py", label="🧪 Dummy")
