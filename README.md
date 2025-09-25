@@ -1,6 +1,6 @@
 # This Repo is for IND320: Data to Decisions
 
-### Project Description 
+## Project Description 
 
 This repository accompanies the IND320 course at NMBU. In the course I work with data and visualize key insights. I also build forecasts, train machine-learning models, and use tools such as Docker and PySpark.
 
@@ -19,7 +19,7 @@ https://ind320-fheflo1.streamlit.app/
 - In the app you can navigate through different pages and explore the data.
 
 ### Local Run 
-pip install -r requirements.txt
-streamlit run app.py
+1. pip install -r requirements.txt
+2. streamlit run app.py
 
 
