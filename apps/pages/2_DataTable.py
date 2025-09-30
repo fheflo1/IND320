@@ -1,37 +1,21 @@
 from pathlib import Path
-import pandas as pd
+import sys
+project_root = Path(__file__).resolve().parents[2]
+sys.path.append(str(project_root))
 import streamlit as st
+from src.data import load_csv
+from src.plots import prepare_first_month_table
 
 st.title("📄 DataTable")
 
+# Bruk din eksisterende load_csv
+df = load_csv()
 
-@st.cache_data
-def load_data() -> pd.DataFrame:
-    # 2 nivå opp fra apps/pages → prosjektrot
-    project_root = Path(__file__).resolve().parents[2]
-    csv_path = project_root / "data" / "open-meteo-subset.csv"
-    return pd.read_csv(csv_path)
-
-
-# st.column_config.LineChartColumn()
-df = load_data()
 st.subheader("Raw Data (First 100 Rows)")
-
 st.dataframe(df.head(100), width="stretch")
 
-# Finn første måned i datasettet og filtrer til den
-df["time"] = pd.to_datetime(df["time"])
-first_month = df["time"].dt.to_period("M").min()
-fm = df[df["time"].dt.to_period("M") == first_month].reset_index(drop=True)
-
-# Ta kun numeriske kolonner (utelukk 'time')
-num_cols = fm.select_dtypes(include="number").columns.tolist()
-
-# Bygg en rad per kolonne med verdiene for første måned som liste
-rows = [
-    {"column": col, "first_month": fm[col].astype(float).tolist()} for col in num_cols
-]
-df_rows = pd.DataFrame(rows)
+# Bruk hjelpefunksjonen fra plots.py
+df_rows, first_month = prepare_first_month_table(df)
 
 st.subheader("Line Chart of Raw Data for First Month")
 
