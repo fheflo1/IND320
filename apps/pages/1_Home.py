@@ -9,7 +9,6 @@ st.title("🏠 Home")
 st.info("Tip: The sidebar contains shortcuts to the other pages.")
 
 
-
 # --- Last data ---
 project_root = Path(__file__).resolve().parents[2]
 csv_path = project_root / "data" / "open-meteo-subset.csv"
@@ -60,7 +59,12 @@ if len(numeric_cols) <= 9:
             cols[j].metric(label, display)
 else:
     # for many columns show a table (variable, average)
-    display_df = row.rename_axis("variable").reset_index().rename(columns={selected_month: "average"})
+    display_df = (
+        row.rename_axis("variable")
+        .reset_index()
+        .rename(columns={selected_month: "average"})
+    )
+
     # nicer formatting of numeric values and units
     def fmt_val(x, cname):
         if pd.isna(x):
@@ -70,5 +74,6 @@ else:
         if m:
             v += f" {m.group(1)}"
         return v
+
     display_df["average"] = [fmt_val(row[c], c) for c in numeric_cols]
     st.table(display_df.set_index("variable"))

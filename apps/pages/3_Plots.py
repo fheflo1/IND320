@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+
 project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 
@@ -14,7 +15,9 @@ df = load_csv()
 # brukerinput
 all_cols = [c for c in df.columns if c != "time"]
 select_all = st.checkbox("Select all columns", value=False)
-selected = st.multiselect("Select columns", options=all_cols, default=(all_cols if select_all else []))
+selected = st.multiselect(
+    "Select columns", options=all_cols, default=(all_cols if select_all else [])
+)
 cols = selected or all_cols
 
 df["month"] = df["time"].dt.to_period("M").astype(str)

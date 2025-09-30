@@ -1,9 +1,11 @@
 from pathlib import Path
 import pandas as pd
 
+
 def project_root() -> Path:
     """Returnerer prosjektroten (mappa som inneholder src/ og data/)."""
     return Path(__file__).resolve().parents[1]
+
 
 def load_csv() -> pd.DataFrame:
     """Laster inn open-meteo-subset.csv fra data/-mappa."""
@@ -16,4 +18,3 @@ def load_csv() -> pd.DataFrame:
     df = pd.read_csv(csv_path)
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
     return df.dropna(subset=["time"])
-

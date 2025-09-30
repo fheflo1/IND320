@@ -6,23 +6,26 @@ import numpy as np
 import pandas as pd
 
 plt.style.use("dark_background")
-plt.rcParams.update({
-    "figure.facecolor": "black",
-    "axes.facecolor": "black",
-    "savefig.facecolor": "black",
-    "axes.edgecolor": "white",
-    "axes.labelcolor": "white",
-    "xtick.color": "white",
-    "ytick.color": "white",
-    "axes.titlecolor": "white",
-    "text.color": "white",
-    "grid.color": "gray",
-})
+plt.rcParams.update(
+    {
+        "figure.facecolor": "black",
+        "axes.facecolor": "black",
+        "savefig.facecolor": "black",
+        "axes.edgecolor": "white",
+        "axes.labelcolor": "white",
+        "xtick.color": "white",
+        "ytick.color": "white",
+        "axes.titlecolor": "white",
+        "text.color": "white",
+        "grid.color": "gray",
+    }
+)
+
 
 def plot_diverging_line(df, col: str):
     """Plot a line with color interpolation. Handles diverging (center=0) or only positive/negative values."""
     # use dark background and force fully black faces and white text/ticks
-    
+
     y = df[col].values
     x = pd.to_datetime(df["time"])
     x_nums = mdates.date2num(x)
@@ -60,7 +63,6 @@ def plot_diverging_line(df, col: str):
     return fig
 
 
-
 def prepare_first_month_table(df: pd.DataFrame) -> pd.DataFrame:
     """
     Tar et DataFrame med en 'time'-kolonne og returnerer et DataFrame
@@ -89,13 +91,28 @@ def prepare_first_month_table(df: pd.DataFrame) -> pd.DataFrame:
     return df_rows, first_month
 
 
-
 # Plots for page 3_Plots.py
 GROUPS = {
-    "temp": {"label": "Temperature (°C)", "cols": ["temperature_2m (°C)"], "style": dict(lw=1.5, color=None)},
-    "wind": {"label": "Wind (m/s)", "cols": ["wind_speed_10m (m/s)", "wind_gusts_10m (m/s)"], "style": dict(lw=1.2, color=None)},
-    "precip": {"label": "Precipitation (mm)", "cols": ["precipitation (mm)"], "style": dict(alpha=0.25)},
-    "wdir": {"label": "Wind direction (°)", "cols": ["wind_direction_10m (°)"], "style": dict(lw=1.0, linestyle=":")},
+    "temp": {
+        "label": "Temperature (°C)",
+        "cols": ["temperature_2m (°C)"],
+        "style": dict(lw=1.5, color=None),
+    },
+    "wind": {
+        "label": "Wind (m/s)",
+        "cols": ["wind_speed_10m (m/s)", "wind_gusts_10m (m/s)"],
+        "style": dict(lw=1.2, color=None),
+    },
+    "precip": {
+        "label": "Precipitation (mm)",
+        "cols": ["precipitation (mm)"],
+        "style": dict(alpha=0.25),
+    },
+    "wdir": {
+        "label": "Wind direction (°)",
+        "cols": ["wind_direction_10m (°)"],
+        "style": dict(lw=1.0, linestyle=":"),
+    },
 }
 
 
@@ -132,7 +149,13 @@ def normalize_frame(frame: pd.DataFrame, cols: list[str], method: str):
     return g, "Value"
 
 
-def plot_weather(data: pd.DataFrame, cols: list[str], month_sel: str, mode: str, method: str | None = None):
+def plot_weather(
+    data: pd.DataFrame,
+    cols: list[str],
+    month_sel: str,
+    mode: str,
+    method: str | None = None,
+):
     """
     Lager figur for valgt måned og kolonner.
     mode: "Normalize" eller "Auto-axes"
@@ -176,7 +199,9 @@ def plot_weather(data: pd.DataFrame, cols: list[str], month_sel: str, mode: str,
             gcols = [c for c in meta["cols"] if c in cols]
             if g == "precip":
                 y = data[gcols[0]].rolling(24, min_periods=1).sum()
-                h = ax.fill_between(data["time"], 0, y, label="Precip 24h sum (mm)", **meta["style"])
+                h = ax.fill_between(
+                    data["time"], 0, y, label="Precip 24h sum (mm)", **meta["style"]
+                )
             else:
                 for c in gcols:
                     h = ax.plot(data["time"], data[c], label=c, **meta["style"])[0]

@@ -1,4 +1,3 @@
-
 import sys
 from pathlib import Path
 
@@ -14,6 +13,8 @@ from src.plots import plot_diverging_line
 st.title("Dummy Page")
 
 df = load_csv()
-col_choice = st.selectbox("Velg kolonne", options=[c for c in df.columns if c != "time"])
+col_choice = st.selectbox(
+    "Velg kolonne", options=[c for c in df.columns if c != "time"]
+)
 fig = plot_diverging_line(df, col=col_choice)
 st.pyplot(fig)

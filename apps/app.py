@@ -12,7 +12,8 @@ st.info(
 )
 
 # --- CSS for large buttons with two text levels ---
-st.markdown("""
+st.markdown(
+    """
 <style>
 div.stButton > button {
     width: 650px;
@@ -44,7 +45,9 @@ div.stButton > button:hover {
     display: block;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ---- 2x2 GRID WITH BUTTONS ----
 col1, col2 = st.columns(2, gap="large")
