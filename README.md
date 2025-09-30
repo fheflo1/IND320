@@ -23,6 +23,7 @@ https://ind320-fheflo1.streamlit.app/
 2. streamlit run app.py
 
 ### Structure
+```bash
 .
 ├─ apps/
 │  ├─ app.py
