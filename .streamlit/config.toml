@@ -4,16 +4,16 @@
 base = "dark"
 
 # A klar men dempet blå som aksentfarge (knapper, sliders etc.)
-primaryColor = "#4EA8DE"
+primaryColor = "#3AE8D6"
 
 # Hovedbakgrunn: nesten svart (gir fokus på plots og tekst)
-backgroundColor = "#0E1117"
+backgroundColor = "#1C202D"
 
 # Sekundær bakgrunn: litt lysere grå for paneler og widgets
-secondaryBackgroundColor = "#1E222B"
+secondaryBackgroundColor = "#152E39"
 
 # Tekstfarge: lett lesbar lys grå
-textColor = "#E1E1E6"
+textColor = "#CBCBCB"
 
 # Lenker: en frisk cyan, som gir kontrast uten å ta over
 linkColor = "#4FD1C5"
