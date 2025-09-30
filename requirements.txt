@@ -1,3 +1,7 @@
-streamlit
-pandas
+black
+ipykernel
+ipython_pygments_lexers
 matplotlib
+pandas
+streamlit
+tinycss2
