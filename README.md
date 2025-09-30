@@ -22,4 +22,23 @@ https://ind320-fheflo1.streamlit.app/
 1. pip install -r requirements.txt
 2. streamlit run app.py
 
+### Structure
+.
+├─ apps/
+│  ├─ app.py
+│  └─ pages/ 
+│     ├─ 1_Home.py
+│     ├─ 2_DataTable.py
+│     ├─ 3_Plots.py
+│     └─ 4_Dummy.py
+├─ src/
+│  ├─ __init__.py
+│  ├─ data.py
+│  └─ plots.py
+├─ data/open-meteo-subset.csv
+├─ notebooks/
+│  ├─ project.ipynb
+│  └─ project.pdf 
+└─ requirements.txt
+
 
