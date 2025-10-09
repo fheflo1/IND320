@@ -6,7 +6,7 @@ sys.path.append(str(project_root))
 
 import streamlit as st
 from src.data import load_csv
-from src.plots import plot_weather
+from src.analysis.plots import plot_weather
 
 st.title("📈 Plots")
 
