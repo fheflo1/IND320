@@ -5,13 +5,17 @@ from datetime import datetime, timezone, timedelta
 
 BASE_URL = "https://api.elhub.no/energy-data/v0/price-areas"
 
+
 def _iso_date(dt: datetime) -> str:
     """Return ISO8601 with +02:00 offset."""
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone(timedelta(hours=2)))
     return dt.isoformat()
 
-def fetch_elhub_data(start_time: datetime, end_time: datetime, max_retries: int = 3) -> pd.DataFrame:
+
+def fetch_elhub_data(
+    start_time: datetime, end_time: datetime, max_retries: int = 3
+) -> pd.DataFrame:
     """
     Fetch production data from Elhub API for given time range.
     Returns a flat DataFrame with hourly production per price area.
