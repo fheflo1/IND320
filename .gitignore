@@ -211,3 +211,6 @@ No_sync/
 
 # Streamlit 
 .streamlit/
+
+# VSCode
+.vscode/
