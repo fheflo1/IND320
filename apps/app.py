@@ -19,7 +19,7 @@ div.stButton > button {
     width: 650px;
     height: 200px;
     border-radius: 16px;
-    background: #804EA0;
+    background: #308CBA;
     color: #EDEFF2;
     border: 1px solid rgba(255,255,255,0.10);
     transition: all .2s ease;

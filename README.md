@@ -49,7 +49,7 @@ Each stage is represented by a dedicated Jupyter notebook in the `notebooks/` fo
 | Layer  | Purpose | Example Output |
 |---------|----------|----------------|
 | **Bronze** | Raw data directly from the Elhub API, stored unmodified in Cassandra. | `production_raw` |
-| **Silver** | Cleaned and standardized data ready for analysis. | `production_clean` |
+| **Silver** | Cleaned and standardized data ready for analysis. | `production_silver` |
 | **Gold** | Aggregated and business-ready data for reporting and insights. | `production_summary` |
 
 ---
@@ -64,30 +64,23 @@ Each stage is represented by a dedicated Jupyter notebook in the `notebooks/` fo
 │     ├─ 1_Home.py
 │     ├─ 2_DataTable.py
 │     ├─ 3_Plots.py
-│     └─ 4_Dummy.py
+│     ├─ 4_Visualization.py
+│     └─ 5_Dummy.py
 │
 ├─ notebooks/
 │  ├─ 01_cassandra_setup.ipynb        # Creates keyspaces and tables in Cassandra
 │  ├─ 02_elhub_bronze.ipynb           # Fetches raw data from the Elhub API and stores it in Cassandra
 │  ├─ 03_elhub_silver.ipynb           # Cleans and standardizes bronze data
 │  ├─ 04_elhub_gold.ipynb             # Aggregates and analyzes silver data
+│  ├─ 05_db_connections.ipynb         # Connects to MongoDB and insterts cleaned data from Cassandra 
 │  └─ reports/                        # Contains exported notebooks (PDF) for course deliverables
 │
 ├─ src/
 │  ├─ api/
 │  │   └── elhub_api.py               # Functions for fetching and parsing Elhub API data
 │  │
-│  ├─ db/
-│  │   └── cassandra_utils.py         # Connection setup, read/write operations, and testing
-│  │
-│  ├─ transforms/
-│  │   └── data_cleaning.py           # Data cleaning and transformation functions
-│  │
-│  ├─ analysis/
-│  │   └── plots.py                   # Visualizations and KPI generation
-│  │
-│  └─ utils/
-│      └── io_helpers.py              # General helper functions for I/O and logging
+│  └─ analysis/
+│      └── plots.py                   # Visualizations and KPI generation
 │
 ├─ data/
 │  └── open-meteo-subset.csv

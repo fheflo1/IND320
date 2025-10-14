@@ -5,7 +5,7 @@ project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 
 import streamlit as st
-from src.data import load_csv
+from src.data.load_data import load_csv
 from src.analysis.plots import plot_weather
 
 st.title("📈 Plots")
@@ -39,7 +39,7 @@ if mode.startswith("Normalize"):
 
 # plot
 fig = plot_weather(data, cols, month_sel, mode, method)
-st.pyplot(fig)
+st.plotly_chart(fig, use_container_width=True)
 
 st.caption(
     "Select *Normalize* manually when you want to compare shapes on a single scale. "
