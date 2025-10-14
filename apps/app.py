@@ -68,7 +68,9 @@ with col3:
     if st.button("📈 **Plots**\n\n See interactive visualizations", key="plots"):
         st.switch_page("pages/3_Plots.py")
 with col4:
-    if st.button("🖼️ **Visualization**\n\n Interactive maps and charts", key="visualization"):
+    if st.button(
+        "🖼️ **Visualization**\n\n Interactive maps and charts", key="visualization"
+    ):
         st.switch_page("pages/4_Visualization.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)

@@ -9,6 +9,7 @@ from src.analysis.plots import prepare_first_month_table
 
 st.title("📄 DataTable")
 
+
 @st.cache_data(ttl=600)
 def get_data():
     """Load CSV data and cache it for 10 minutes."""
@@ -19,6 +20,7 @@ def get_data():
 def prepare_data(df):
     """Prepare additional tables or visualizations (cached separately)."""
     return prepare_first_month_table(df)
+
 
 df = get_data()
 

@@ -3,10 +3,12 @@ import pandas as pd
 import plotly.express as px
 from pymongo import MongoClient
 
+
 @st.cache_resource
 def get_mongo_client():
     """Initialize MongoDB client once per session."""
     return MongoClient(st.secrets["mongo"]["uri"])
+
 
 @st.cache_data(ttl=600)
 def load_data():
@@ -49,13 +51,23 @@ with col1:
         "Select price area:",
         sorted(df["pricearea"].unique()),
         index=sorted(df["pricearea"].unique()).index(st.session_state.price_area),
-        key="price_area"
+        key="price_area",
     )
 
     month_names = {
-        0: "All year", 1: "January", 2: "February", 3: "March", 4: "April",
-        5: "May", 6: "June", 7: "July", 8: "August", 9: "September",
-        10: "October", 11: "November", 12: "December"
+        0: "All year",
+        1: "January",
+        2: "February",
+        3: "March",
+        4: "April",
+        5: "May",
+        6: "June",
+        7: "July",
+        8: "August",
+        9: "September",
+        10: "October",
+        11: "November",
+        12: "December",
     }
 
     # Filter data for price area and current month (shared with line chart)
@@ -64,9 +76,7 @@ with col1:
         pie_df = pie_df[pie_df["month"] == st.session_state.month]
 
     # Aggregate for pie chart
-    pie_data = (
-        pie_df.groupby("productiongroup")["quantitykwh"].sum().reset_index()
-    )
+    pie_data = pie_df.groupby("productiongroup")["quantitykwh"].sum().reset_index()
 
     # Pie chart
     fig_pie = px.pie(
@@ -74,7 +84,7 @@ with col1:
         values="quantitykwh",
         names="productiongroup",
         title=f"{month_names[st.session_state.month]} – {st.session_state.price_area}",
-        color_discrete_sequence=px.colors.qualitative.Pastel
+        color_discrete_sequence=px.colors.qualitative.Pastel,
     )
     st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -83,9 +93,19 @@ with col2:
     st.subheader("Production trends")
 
     month_names = {
-        0: "All year", 1: "January", 2: "February", 3: "March", 4: "April",
-        5: "May", 6: "June", 7: "July", 8: "August", 9: "September",
-        10: "October", 11: "November", 12: "December"
+        0: "All year",
+        1: "January",
+        2: "February",
+        3: "March",
+        4: "April",
+        5: "May",
+        6: "June",
+        7: "July",
+        8: "August",
+        9: "September",
+        10: "October",
+        11: "November",
+        12: "December",
     }
 
     # Pills for selecting production groups
@@ -94,7 +114,7 @@ with col2:
         options=sorted(df["productiongroup"].unique()),
         selection_mode="multi",
         default=st.session_state.selected_groups,
-        key="selected_groups"
+        key="selected_groups",
     )
 
     # Month selector
@@ -103,7 +123,7 @@ with col2:
         month_names.keys(),
         format_func=lambda x: month_names[x],
         index=st.session_state.month,
-        key="month"
+        key="month",
     )
 
     # Filter data based on selections
@@ -111,11 +131,15 @@ with col2:
     if st.session_state.month != 0:
         line_df = line_df[line_df["month"] == st.session_state.month]
     if st.session_state.selected_groups:
-        line_df = line_df[line_df["productiongroup"].isin(st.session_state.selected_groups)]
+        line_df = line_df[
+            line_df["productiongroup"].isin(st.session_state.selected_groups)
+        ]
 
     # Aggregate for line chart
     line_data = (
-        line_df.groupby(["starttime", "productiongroup"])["quantitykwh"].sum().reset_index()
+        line_df.groupby(["starttime", "productiongroup"])["quantitykwh"]
+        .sum()
+        .reset_index()
     )
 
     # Line chart
@@ -124,14 +148,16 @@ with col2:
         x="starttime",
         y="quantitykwh",
         color="productiongroup",
-        title=f"Production in {st.session_state.price_area} ({month_names[st.session_state.month]})"
+        title=f"Production in {st.session_state.price_area} ({month_names[st.session_state.month]})",
     )
     st.plotly_chart(fig_line, use_container_width=True)
 
 
 with st.expander("ℹ️ About the data"):
-    st.markdown("""
+    st.markdown(
+        """
     **Source:** Elhub API – hourly production data (2021)  
     Data processed in Spark and stored in MongoDB (collection: `production_silver`)  
     Charts show total production by energy source and trend over time.
-    """)
+    """
+    )

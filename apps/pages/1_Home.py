@@ -10,11 +10,13 @@ st.info("Tip: The sidebar contains shortcuts to the other pages.")
 
 # --- Cached data loaders ---
 
+
 @st.cache_data
 def load_data(csv_path: str) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
     df["time"] = pd.to_datetime(df["time"])
     return df
+
 
 @st.cache_data
 def compute_monthly_avg(df: pd.DataFrame) -> pd.DataFrame:

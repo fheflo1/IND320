@@ -11,10 +11,12 @@ from src.analysis.plots import plot_diverging_line
 
 st.title("Dummy Page")
 
+
 # Cache the loaded dataframe for efficiency
 @st.cache_data
 def cached_load_csv():
     return load_csv()
+
 
 # Optionally cache the plotting step as well
 @st.cache_data

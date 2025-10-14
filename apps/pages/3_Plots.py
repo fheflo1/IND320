@@ -10,6 +10,7 @@ from src.analysis.plots import plot_weather
 
 st.title("📈 Plots")
 
+
 @st.cache_data(ttl=600)
 def get_data():
     """Load CSV data and cache it for 10 minutes."""
