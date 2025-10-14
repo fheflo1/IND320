@@ -4,7 +4,7 @@ import sys
 project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 import streamlit as st
-from src.data import load_csv
+from src.data.load_data import load_csv
 from src.analysis.plots import prepare_first_month_table
 
 st.title("📄 DataTable")

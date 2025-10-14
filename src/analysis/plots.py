@@ -1,27 +1,6 @@
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from matplotlib.collections import LineCollection
-from matplotlib.colors import Normalize, TwoSlopeNorm
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
-
-# plt.style.use("dark_background")
-# plt.rcParams.update(
-#     {
-#         "figure.facecolor": "black",
-#         "axes.facecolor": "black",
-#         "savefig.facecolor": "black",
-#         "axes.edgecolor": "white",
-#         "axes.labelcolor": "white",
-#         "xtick.color": "white",
-#         "ytick.color": "white",
-#         "axes.titlecolor": "white",
-#         "text.color": "white",
-#         "grid.color": "gray",
-#     }
-# )
 
 
 def plot_diverging_line(df, col: str):
@@ -76,23 +55,24 @@ def plot_diverging_line(df, col: str):
 
 def prepare_first_month_table(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Tar et DataFrame med en 'time'-kolonne og returnerer et DataFrame
-    med én rad per numerisk kolonne og en LineChartColumn-kompatibel liste
-    med verdier for den første måneden i datasettet.
+    Takes a DataFrame with a 'time' column and returns a DataFrame
+    with one row per numeric column and a LineChartColumn-compatible list
+    of values for the first month in the dataset.
+    Returns (rows_dataframe, first_month_period).
     """
 
-    # Konverter tid
+    # Convert time
     df = df.copy()
     df["time"] = pd.to_datetime(df["time"])
 
-    # Finn første måned
+    # Find first month
     first_month = df["time"].dt.to_period("M").min()
     fm = df[df["time"].dt.to_period("M") == first_month].reset_index(drop=True)
 
-    # Kun numeriske kolonner
+    # Only numeric columns
     num_cols = fm.select_dtypes(include="number").columns.tolist()
 
-    # Bygg "table" format
+    # Build "table" format
     rows = [
         {"column": col, "first_month": fm[col].astype(float).tolist()}
         for col in num_cols
@@ -154,7 +134,9 @@ def plot_weather(data, cols, month_sel, mode, method=None):
     # --- Add traces and axis setup ---
     # If not full_width, distribute right-side axes in the reserved space; otherwise no right-side axes
     axis_positions = (
-        np.linspace(0.83, 0.98, max(1, len(used))) if not full_width else np.array([0.98])
+        np.linspace(0.83, 0.98, max(1, len(used)))
+        if not full_width
+        else np.array([0.98])
     )
 
     if normalized_mode:
@@ -201,15 +183,19 @@ def plot_weather(data, cols, month_sel, mode, method=None):
                     else:
                         arr_norm = arr  # fallback: raw
 
-                display_name = f"{name_base} ({norm_method})" if norm_method else name_base
+                display_name = (
+                    f"{name_base} ({norm_method})" if norm_method else name_base
+                )
 
-                fig.add_trace(go.Scatter(
-                    x=data["time"],
-                    y=arr_norm,
-                    mode="lines",
-                    name=display_name,
-                    yaxis="y"  # left normalized axis
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=data["time"],
+                        y=arr_norm,
+                        mode="lines",
+                        name=display_name,
+                        yaxis="y",  # left normalized axis
+                    )
+                )
 
         # Configure only the left normalized axis
         yaxis_cfg = dict(
@@ -234,23 +220,27 @@ def plot_weather(data, cols, month_sel, mode, method=None):
             # Add traces for group
             if g == "precip":
                 y = data[gcols[0]].rolling(24, min_periods=1).sum()
-                fig.add_trace(go.Scatter(
-                    x=data["time"],
-                    y=y,
-                    name="Precip 24h sum (mm)",
-                    fill="tozeroy",
-                    opacity=0.4,
-                    yaxis=axis_id_trace
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=data["time"],
+                        y=y,
+                        name="Precip 24h sum (mm)",
+                        fill="tozeroy",
+                        opacity=0.4,
+                        yaxis=axis_id_trace,
+                    )
+                )
             else:
                 for c in gcols:
-                    fig.add_trace(go.Scatter(
-                        x=data["time"],
-                        y=data[c],
-                        mode="lines",
-                        name=c,
-                        yaxis=axis_id_trace
-                    ))
+                    fig.add_trace(
+                        go.Scatter(
+                            x=data["time"],
+                            y=data[c],
+                            mode="lines",
+                            name=c,
+                            yaxis=axis_id_trace,
+                        )
+                    )
 
             # Axis config: first axis stays on the left (no position set), others on the right and overlay the left
             axis_settings = dict(
@@ -267,10 +257,7 @@ def plot_weather(data, cols, month_sel, mode, method=None):
                 ticks = np.linspace(0, 360, 9)
                 labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
                 axis_settings.update(
-                    tickmode="array",
-                    tickvals=ticks,
-                    ticktext=labels,
-                    range=[0, 360]
+                    tickmode="array", tickvals=ticks, ticktext=labels, range=[0, 360]
                 )
 
             fig.layout[axis_name] = axis_settings
