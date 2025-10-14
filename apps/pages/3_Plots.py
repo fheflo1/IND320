@@ -39,7 +39,7 @@ if mode.startswith("Normalize"):
 
 # plot
 fig = plot_weather(data, cols, month_sel, mode, method)
-st.pyplot(fig)
+st.plotly_chart(fig, use_container_width=True)
 
 st.caption(
     "Select *Normalize* manually when you want to compare shapes on a single scale. "

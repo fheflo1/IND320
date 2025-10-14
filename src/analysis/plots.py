@@ -4,6 +4,8 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize, TwoSlopeNorm
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 # plt.style.use("dark_background")
 # plt.rcParams.update(
@@ -96,127 +98,181 @@ GROUPS = {
     "temp": {
         "label": "Temperature (°C)",
         "cols": ["temperature_2m (°C)"],
-        "style": dict(lw=1.5, color=None),
     },
     "wind": {
         "label": "Wind (m/s)",
         "cols": ["wind_speed_10m (m/s)", "wind_gusts_10m (m/s)"],
-        "style": dict(lw=1.2, color=None),
     },
     "precip": {
         "label": "Precipitation (mm)",
         "cols": ["precipitation (mm)"],
-        "style": dict(alpha=0.25),
     },
     "wdir": {
         "label": "Wind direction (°)",
         "cols": ["wind_direction_10m (°)"],
-        "style": dict(lw=1.0, linestyle=":"),
     },
 }
 
 
-def set_monthly_ticks(ax):
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=3))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-    ax.tick_params(axis="x", rotation=45)
+def plot_weather(data, cols, month_sel, mode, method=None):
+    fig = go.Figure()
 
+    order = ["temp", "wind", "precip", "wdir"]
+    used = [g for g in order if any(c in cols for c in GROUPS[g]["cols"])]
 
-def set_cardinal_ticks(ax):
-    ticks = [0, 45, 90, 135, 180, 225, 270, 315, 360]
-    labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
-    ax.set_yticks(ticks)
-    ax.set_yticklabels(labels)
-    ax.set_ylim(0, 360)
-
-
-def normalize_frame(frame: pd.DataFrame, cols: list[str], method: str):
-    g = frame.copy()
-    if method == "Z-score":
-        for c in cols:
-            g[c] = (g[c] - g[c].mean()) / g[c].std(ddof=0)
-        return g, "Standardized value (z-score)"
-    if method == "Min–max (0–1)":
-        for c in cols:
-            rng = (g[c].max() - g[c].min()) or 1.0
-            g[c] = (g[c] - g[c].min()) / rng
-        return g, "Scaled 0–1"
-    if method == "Index 100 at start":
-        for c in cols:
-            base = g[c].iloc[0] or 1.0
-            g[c] = g[c] / base * 100.0
-        return g, "Index (start=100)"
-    return g, "Value"
-
-
-def plot_weather(
-    data: pd.DataFrame,
-    cols: list[str],
-    month_sel: str,
-    mode: str,
-    method: str | None = None,
-):
-    """
-    Lager figur for valgt måned og kolonner.
-    mode: "Normalize" eller "Auto-axes"
-    """
-    fig, axA = plt.subplots(figsize=(14, 5))
-
-    if mode.startswith("Normalize"):
-        dfn, ylab = normalize_frame(data, cols, method)
-        for c in cols:
-            axA.plot(dfn["time"], dfn[c], lw=1.2, label=c)
-        axA.set_ylabel(ylab)
-        axA.legend(ncol=2, fontsize=9, loc="upper left")
-
+    # Determine normalization method. Support several user strings and fall back to None
+    raw_choice = (method or mode or "").strip().lower()
+    if raw_choice in ("", "raw", "none", "no"):
+        norm_method = None
+    elif raw_choice in ("normalized", "norm", "minmax", "min-max", "max-min"):
+        norm_method = "minmax"
+    elif raw_choice in ("zscore", "z-score", "std", "standardize"):
+        norm_method = "zscore"
+    elif raw_choice in ("index", "indexed", "relative"):
+        norm_method = "index"
     else:
-        axes = {"A": axA}
-        order = ["temp", "wind", "precip", "wdir"]
-        used = [g for g in order if any(c in cols for c in GROUPS[g]["cols"])]
+        # unknown option -> treat as raw
+        norm_method = None
 
-        if len(used) >= 2:
-            axes["B"] = axA.twinx()
-        if len(used) >= 3:
-            axC = axA.twinx()
-            axC.spines["right"].set_position(("axes", 1.10))
-            axC.set_frame_on(True)
-            axC.patch.set_visible(False)
-            axes["C"] = axC
-        if len(used) >= 4:
-            axD = axA.twinx()
-            axD.spines["right"].set_position(("axes", 1.20))
-            axD.set_frame_on(True)
-            axD.patch.set_visible(False)
-            axes["D"] = axD
+    normalized_mode = norm_method is not None
 
-        axis_keys = list(axes.keys())
-        group_axis = {g: axis_keys[i] for i, g in enumerate(used)}
+    # If only one column selected or in normalized mode, use the full horizontal space
+    full_width = len(cols) == 1 or normalized_mode
 
-        handles, labels = [], []
+    # Define x-domain: use full width when requested, otherwise leave room for right-side axes
+    fig.update_layout(xaxis=dict(domain=[0, 1.0] if full_width else [0, 0.82]))
+
+    # --- Add traces and axis setup ---
+    # If not full_width, distribute right-side axes in the reserved space; otherwise no right-side axes
+    axis_positions = (
+        np.linspace(0.83, 0.98, max(1, len(used))) if not full_width else np.array([0.98])
+    )
+
+    if normalized_mode:
+        # Single normalized left axis: apply chosen normalization to every series and plot on the left
         for g in used:
-            ax = axes[group_axis[g]]
             meta = GROUPS[g]
             gcols = [c for c in meta["cols"] if c in cols]
+            for c in gcols:
+                if g == "precip":
+                    series = data[c].rolling(24, min_periods=1).sum().astype(float)
+                    name_base = "Precip 24h sum"
+                else:
+                    series = data[c].astype(float)
+                    name_base = c
+
+                arr = series.values.astype(float)
+                valid = ~np.isnan(arr)
+
+                if not valid.any():
+                    arr_norm = np.full_like(arr, np.nan, dtype=float)
+                else:
+                    if norm_method == "minmax":
+                        vmin = np.nanmin(arr)
+                        vmax = np.nanmax(arr)
+                        if np.isclose(vmax, vmin):
+                            arr_norm = np.where(valid, 0.0, np.nan)
+                        else:
+                            arr_norm = (arr - vmin) / (vmax - vmin)
+                    elif norm_method == "zscore":
+                        mean = np.nanmean(arr)
+                        std = np.nanstd(arr)
+                        if np.isclose(std, 0.0):
+                            arr_norm = np.where(valid, 0.0, np.nan)
+                        else:
+                            arr_norm = (arr - mean) / std
+                    elif norm_method == "index":
+                        # index to first valid value, scale so first valid = 100
+                        first_idx = np.where(valid)[0][0]
+                        base = arr[first_idx]
+                        if np.isclose(base, 0.0):
+                            arr_norm = np.where(valid, np.nan, np.nan)
+                        else:
+                            arr_norm = (arr / base) * 100.0
+                    else:
+                        arr_norm = arr  # fallback: raw
+
+                display_name = f"{name_base} ({norm_method})" if norm_method else name_base
+
+                fig.add_trace(go.Scatter(
+                    x=data["time"],
+                    y=arr_norm,
+                    mode="lines",
+                    name=display_name,
+                    yaxis="y"  # left normalized axis
+                ))
+
+        # Configure only the left normalized axis
+        yaxis_cfg = dict(
+            title=f"{'Normalized (0-1)' if norm_method=='minmax' else ('Z-score' if norm_method=='zscore' else 'Indexed (first=100)')}",
+            showgrid=False,
+            side="left",
+        )
+        if norm_method == "minmax":
+            yaxis_cfg["range"] = [0, 1]
+
+        fig.layout["yaxis"] = yaxis_cfg
+
+    else:
+        # Non-normalized mode: keep at least one axis on left, additional axes on right
+        for i, (g, pos) in enumerate(zip(used, axis_positions)):
+            # axis identifiers used in traces: 'y' for first, 'y2'/'y3'... for others
+            axis_id_trace = "y" if i == 0 else f"y{i+1}"
+            axis_name = "yaxis" if i == 0 else f"yaxis{i+1}"
+            meta = GROUPS[g]
+            gcols = [c for c in meta["cols"] if c in cols]
+
+            # Add traces for group
             if g == "precip":
                 y = data[gcols[0]].rolling(24, min_periods=1).sum()
-                h = ax.fill_between(
-                    data["time"], 0, y, label="Precip 24h sum (mm)", **meta["style"]
-                )
+                fig.add_trace(go.Scatter(
+                    x=data["time"],
+                    y=y,
+                    name="Precip 24h sum (mm)",
+                    fill="tozeroy",
+                    opacity=0.4,
+                    yaxis=axis_id_trace
+                ))
             else:
                 for c in gcols:
-                    h = ax.plot(data["time"], data[c], label=c, **meta["style"])[0]
-            ax.set_ylabel(meta["label"])
+                    fig.add_trace(go.Scatter(
+                        x=data["time"],
+                        y=data[c],
+                        mode="lines",
+                        name=c,
+                        yaxis=axis_id_trace
+                    ))
+
+            # Axis config: first axis stays on the left (no position set), others on the right and overlay the left
+            axis_settings = dict(
+                title=meta["label"],
+                showgrid=False,
+                side="left" if i == 0 else "right",
+            )
+            if i > 0:
+                axis_settings["overlaying"] = "y"
+                axis_settings["position"] = float(pos)
+
+            # Special ticks for wind direction
             if g == "wdir":
-                set_cardinal_ticks(ax)
-            h_, l_ = ax.get_legend_handles_labels()
-            handles += h_
-            labels += l_
+                ticks = np.linspace(0, 360, 9)
+                labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
+                axis_settings.update(
+                    tickmode="array",
+                    tickvals=ticks,
+                    ticktext=labels,
+                    range=[0, 360]
+                )
 
-        axA.legend(handles, labels, ncol=2, fontsize=9, loc="upper left")
+            fig.layout[axis_name] = axis_settings
 
-    axA.set_title(f"Weather – {month_sel}")
-    axA.set_xlabel("Time")
-    set_monthly_ticks(axA)
-    axA.grid(alpha=0.3)
-    fig.tight_layout()
+    # --- Layout styling ---
+    fig.update_layout(
+        title=f"Weather – {month_sel}",
+        xaxis_title="Time",
+        template="plotly_dark",
+        margin=dict(l=40, r=140, t=50, b=40),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
+    )
+
     return fig
