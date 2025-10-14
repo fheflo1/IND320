@@ -25,42 +25,51 @@ import plotly.graph_objects as go
 
 
 def plot_diverging_line(df, col: str):
-    """Plot a line with color interpolation. Handles diverging (center=0) or only positive/negative values."""
-    # use dark background and force fully black faces and white text/ticks
+    pts = df[["time", col]].copy()
+    pts["time"] = pd.to_datetime(pts["time"])
+    pts[col] = pd.to_numeric(pts[col], errors="coerce")
+    pts = pts.dropna().reset_index(drop=True)
 
-    y = df[col].values
-    x = pd.to_datetime(df["time"])
-    x_nums = mdates.date2num(x)
+    if pts.empty:
+        return go.Figure()
 
-    # Bygg segmenter
-    points = np.array([x_nums, y]).T.reshape(-1, 1, 2)
-    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    y_all = pts[col].values
+    vmin, vmax = np.nanmin(y_all), np.nanmax(y_all)
 
-    # Velg colormap og normalisering
-    if y.min() < 0 and y.max() > 0:
-        norm = TwoSlopeNorm(vmin=y.min(), vcenter=0.0, vmax=y.max())
-        cmap = "coolwarm"
+    # Diverging colormap logic
+    if vmin < 0 and vmax > 0:
+        vmax_abs = max(abs(vmin), abs(vmax))
+        cmin, cmax = -vmax_abs, vmax_abs
+        colorscale = "RdBu"
     else:
-        norm = Normalize(vmin=y.min(), vmax=y.max())
-        cmap = "Spectral"
+        cmin, cmax = vmin, vmax
+        colorscale = "Spectral"
 
-    lc = LineCollection(segments, cmap=cmap, norm=norm, linewidth=2)
-    lc.set_array((y[:-1] + y[1:]) / 2)
+    # Fast ScatterGL with color per point
+    fig = go.Figure(
+        data=go.Scattergl(
+            x=pts["time"],
+            y=pts[col],
+            mode="lines+markers",
+            line=dict(width=1.5, color="lightgray"),
+            marker=dict(
+                color=pts[col],
+                colorscale=colorscale,
+                cmin=cmin,
+                cmax=cmax,
+                size=3,
+                colorbar=dict(title=col),
+            ),
+        )
+    )
 
-    # Plot
-    fig, ax = plt.subplots(figsize=(12, 5))
-    ax.add_collection(lc)
-    ax.set_xlim(x_nums.min(), x_nums.max())
-    ax.set_ylim(y.min() - 1, y.max() + 1)
-    ax.xaxis.set_major_locator(mdates.MonthLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
-
-    ax.set_title(f"{col} over tid")
-    ax.set_xlabel("Time")
-    ax.set_ylabel(col)
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.colorbar(lc, ax=ax, label=col)
-    plt.tight_layout()
+    fig.update_layout(
+        title=f"{col} over time",
+        template="plotly_dark",
+        margin=dict(l=40, r=100, t=50, b=40),
+        xaxis=dict(title="Time", tickformat="%Y-%m"),
+        yaxis=dict(title=col),
+    )
 
     return fig
 

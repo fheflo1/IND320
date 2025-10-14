@@ -25,8 +25,13 @@ def cached_plot(df, col: str):
 
 
 df = cached_load_csv()
-col_choice = st.selectbox(
-    "Velg kolonne", options=[c for c in df.columns if c != "time"]
-)
-fig = cached_plot(df, col_choice)
-st.pyplot(fig)
+
+if df is not None and not df.empty:
+    col_choice = st.selectbox(
+        "Select column", options=[c for c in df.columns if c != "time"]
+    )
+
+    fig = cached_plot(df, col_choice)
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("No data loaded. Please check your data source.")
