@@ -19,7 +19,7 @@ div.stButton > button {
     width: 650px;
     height: 200px;
     border-radius: 16px;
-    background: #804EA0;
+    background: #308CBA;
     color: #EDEFF2;
     border: 1px solid rgba(255,255,255,0.10);
     transition: all .2s ease;
@@ -49,25 +49,36 @@ div.stButton > button:hover {
     unsafe_allow_html=True,
 )
 
-# ---- 2x2 GRID WITH BUTTONS ----
-col1, col2 = st.columns(2, gap="large")
+# ---- 2 COLUMNS x 3 ROWS (Dummy on third row) ----
 
+# Row 1
+col1, col2 = st.columns(2, gap="large")
 with col1:
     if st.button("🏠 **Home**\n\n Welcome to the dashboard", key="home"):
         st.switch_page("pages/1_Home.py")
-
 with col2:
     if st.button("📄 **DataTable**\n\n Explore raw data and tables", key="data"):
         st.switch_page("pages/2_DataTable.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 
+# Row 2
 col3, col4 = st.columns(2, gap="large")
-
 with col3:
     if st.button("📈 **Plots**\n\n See interactive visualizations", key="plots"):
         st.switch_page("pages/3_Plots.py")
-
 with col4:
+    if st.button(
+        "🖼️ **Visualization**\n\n Interactive maps and charts", key="visualization"
+    ):
+        st.switch_page("pages/4_Visualization.py")
+
+st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+
+# Row 3 (Dummy)
+col5, col6 = st.columns(2, gap="large")
+with col5:
     if st.button("🧪 **Dummy**\n\n Experimental page with test plots", key="dummy"):
-        st.switch_page("pages/4_Dummy.py")
+        st.switch_page("pages/5_Dummy.py")
+with col6:
+    st.write("")  # empty column for alignment

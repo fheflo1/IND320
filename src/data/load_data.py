@@ -4,7 +4,7 @@ import pandas as pd
 
 def project_root() -> Path:
     """Returnerer prosjektroten (mappa som inneholder src/ og data/)."""
-    return Path(__file__).resolve().parents[1]
+    return Path(__file__).resolve().parents[2]
 
 
 def load_csv() -> pd.DataFrame:

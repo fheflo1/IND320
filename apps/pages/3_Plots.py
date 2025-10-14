@@ -5,12 +5,19 @@ project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 
 import streamlit as st
-from src.data import load_csv
-from src.plots import plot_weather
+from src.data.load_data import load_csv
+from src.analysis.plots import plot_weather
 
 st.title("📈 Plots")
 
-df = load_csv()
+
+@st.cache_data(ttl=600)
+def get_data():
+    """Load CSV data and cache it for 10 minutes."""
+    return load_csv()
+
+
+df = get_data()
 
 # brukerinput
 all_cols = [c for c in df.columns if c != "time"]
@@ -32,7 +39,7 @@ if mode.startswith("Normalize"):
 
 # plot
 fig = plot_weather(data, cols, month_sel, mode, method)
-st.pyplot(fig)
+st.plotly_chart(fig, use_container_width=True)
 
 st.caption(
     "Select *Normalize* manually when you want to compare shapes on a single scale. "
