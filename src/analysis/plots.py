@@ -5,21 +5,21 @@ from matplotlib.colors import Normalize, TwoSlopeNorm
 import numpy as np
 import pandas as pd
 
-plt.style.use("dark_background")
-plt.rcParams.update(
-    {
-        "figure.facecolor": "black",
-        "axes.facecolor": "black",
-        "savefig.facecolor": "black",
-        "axes.edgecolor": "white",
-        "axes.labelcolor": "white",
-        "xtick.color": "white",
-        "ytick.color": "white",
-        "axes.titlecolor": "white",
-        "text.color": "white",
-        "grid.color": "gray",
-    }
-)
+# plt.style.use("dark_background")
+# plt.rcParams.update(
+#     {
+#         "figure.facecolor": "black",
+#         "axes.facecolor": "black",
+#         "savefig.facecolor": "black",
+#         "axes.edgecolor": "white",
+#         "axes.labelcolor": "white",
+#         "xtick.color": "white",
+#         "ytick.color": "white",
+#         "axes.titlecolor": "white",
+#         "text.color": "white",
+#         "grid.color": "gray",
+#     }
+# )
 
 
 def plot_diverging_line(df, col: str):
