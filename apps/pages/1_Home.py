@@ -8,17 +8,28 @@ st.title("🏠 Home")
 
 st.info("Tip: The sidebar contains shortcuts to the other pages.")
 
+# --- Cached data loaders ---
+
+@st.cache_data
+def load_data(csv_path: str) -> pd.DataFrame:
+    df = pd.read_csv(csv_path)
+    df["time"] = pd.to_datetime(df["time"])
+    return df
+
+@st.cache_data
+def compute_monthly_avg(df: pd.DataFrame) -> pd.DataFrame:
+    # group by calendar month and take average
+    return df.groupby(df["time"].dt.month).mean()
+
 
 # --- Last data ---
 project_root = Path(__file__).resolve().parents[2]
 csv_path = project_root / "data" / "open-meteo-subset.csv"
-df = pd.read_csv(csv_path)
-df["time"] = pd.to_datetime(df["time"])
+
+df = load_data(str(csv_path))
+monthly_avg = compute_monthly_avg(df)
 
 # --- Monthly averages widget ---
-
-# prepare monthly averages (grouped by calendar month)
-monthly_avg = df.groupby(df["time"].dt.month).mean()
 
 # available months in the data (as numbers) and their display names
 available_months = sorted(monthly_avg.index.tolist())
