@@ -26,6 +26,7 @@ The dashboard presents energy and environmental data in a clear, interactive way
 - **Home:** Overview and summary  
 - **Data Table:** Filter and explore raw data  
 - **Plots:** Visualize trends and KPIs  
+- **Visualization:** Visualize total production by energy source
 - **Dummy:** Experimental/testing page  
 
 ---
@@ -46,11 +47,11 @@ Each stage is represented by a dedicated Jupyter notebook in the `notebooks/` fo
 
 ### Architecture Overview
 
-| Layer  | Purpose | Example Output |
+| Layer  | Purpose | Output |
 |---------|----------|----------------|
 | **Bronze** | Raw data directly from the Elhub API, stored unmodified in Cassandra. | `production_raw` |
 | **Silver** | Cleaned and standardized data ready for analysis. | `production_silver` |
-| **Gold** | Aggregated and business-ready data for reporting and insights. | `production_summary` |
+| **Gold** | Aggregated and business-ready data for reporting and insights. | `production_silver` |
 
 ---
 
