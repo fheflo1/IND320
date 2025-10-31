@@ -214,3 +214,6 @@ No_sync/
 
 # VSCode
 .vscode/
+
+# data/bronze/meteo_bergen_2019.csv
+meteo_bergen_2019.csv
