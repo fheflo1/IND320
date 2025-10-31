@@ -8,3 +8,5 @@ tinycss2
 pyspark 
 pymongo
 plotly
+scikit-learn
+scipy
