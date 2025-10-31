@@ -103,172 +103,117 @@ GROUPS = {
 }
 
 
-def plot_weather(data, cols, month_sel, mode, method=None):
+
+def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
+    """
+    Interactive weather plot with clean axis management.
+    """
+    if df.empty or not cols:
+        fig = go.Figure()
+        fig.update_layout(title="No data selected", template="plotly_white")
+        return fig
+
     fig = go.Figure()
 
-    order = ["temp", "wind", "precip", "wdir"]
-    used = [g for g in order if any(c in cols for c in GROUPS[g]["cols"])]
-
-    # Determine normalization method. Support several user strings and fall back to None
-    raw_choice = (method or mode or "").strip().lower()
-    if raw_choice in ("", "raw", "none", "no"):
-        norm_method = None
-    elif raw_choice in ("normalized", "norm", "minmax", "min-max", "max-min"):
-        norm_method = "minmax"
-    elif raw_choice in ("zscore", "z-score", "std", "standardize"):
-        norm_method = "zscore"
-    elif raw_choice in ("index", "indexed", "relative"):
-        norm_method = "index"
+    # Normalize if requested
+    if mode.startswith("Normalize") and method:
+        df_norm = df.copy()
+        for c in cols:
+            x = df[c].astype(float)
+            if method == "Z-score":
+                df_norm[c] = (x - np.nanmean(x)) / np.nanstd(x)
+            elif method.startswith("Min"):
+                df_norm[c] = (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x))
+            elif method.startswith("Index"):
+                df_norm[c] = (x / x.iloc[0]) * 100 if x.iloc[0] != 0 else x
+        df_plot = df_norm
     else:
-        # unknown option -> treat as raw
-        norm_method = None
+        df_plot = df
 
-    normalized_mode = norm_method is not None
+    # Assign roles to variables
+    precip_vars = [c for c in cols if "precip" in c.lower()]
+    dir_vars = [c for c in cols if "direction" in c.lower()]
+    main_vars = [c for c in cols if c not in precip_vars + dir_vars]
 
-    # If only one column selected or in normalized mode, use the full horizontal space
-    full_width = len(cols) == 1 or normalized_mode
-
-    # Define x-domain: use full width when requested, otherwise leave room for right-side axes
-    fig.update_layout(xaxis=dict(domain=[0, 1.0] if full_width else [0, 0.82]))
-
-    # --- Add traces and axis setup ---
-    # If not full_width, distribute right-side axes in the reserved space; otherwise no right-side axes
-    axis_positions = (
-        np.linspace(0.83, 0.98, max(1, len(used)))
-        if not full_width
-        else np.array([0.98])
-    )
-
-    if normalized_mode:
-        # Single normalized left axis: apply chosen normalization to every series and plot on the left
-        for g in used:
-            meta = GROUPS[g]
-            gcols = [c for c in meta["cols"] if c in cols]
-            for c in gcols:
-                if g == "precip":
-                    series = data[c].rolling(24, min_periods=1).sum().astype(float)
-                    name_base = "Precip 24h sum"
-                else:
-                    series = data[c].astype(float)
-                    name_base = c
-
-                arr = series.values.astype(float)
-                valid = ~np.isnan(arr)
-
-                if not valid.any():
-                    arr_norm = np.full_like(arr, np.nan, dtype=float)
-                else:
-                    if norm_method == "minmax":
-                        vmin = np.nanmin(arr)
-                        vmax = np.nanmax(arr)
-                        if np.isclose(vmax, vmin):
-                            arr_norm = np.where(valid, 0.0, np.nan)
-                        else:
-                            arr_norm = (arr - vmin) / (vmax - vmin)
-                    elif norm_method == "zscore":
-                        mean = np.nanmean(arr)
-                        std = np.nanstd(arr)
-                        if np.isclose(std, 0.0):
-                            arr_norm = np.where(valid, 0.0, np.nan)
-                        else:
-                            arr_norm = (arr - mean) / std
-                    elif norm_method == "index":
-                        # index to first valid value, scale so first valid = 100
-                        first_idx = np.where(valid)[0][0]
-                        base = arr[first_idx]
-                        if np.isclose(base, 0.0):
-                            arr_norm = np.where(valid, np.nan, np.nan)
-                        else:
-                            arr_norm = (arr / base) * 100.0
-                    else:
-                        arr_norm = arr  # fallback: raw
-
-                display_name = (
-                    f"{name_base} ({norm_method})" if norm_method else name_base
+    # --- Auto-axes mode ---
+    if not mode.startswith("Normalize"):
+        for c in main_vars:
+            fig.add_trace(
+                go.Scatter(
+                    x=df_plot["time"],
+                    y=df_plot[c],
+                    mode="lines",
+                    name=c,
+                    line=dict(width=1.5),
+                    yaxis="y1",
                 )
-
-                fig.add_trace(
-                    go.Scatter(
-                        x=data["time"],
-                        y=arr_norm,
-                        mode="lines",
-                        name=display_name,
-                        yaxis="y",  # left normalized axis
-                    )
-                )
-
-        # Configure only the left normalized axis
-        yaxis_cfg = dict(
-            title=f"{'Normalized (0-1)' if norm_method=='minmax' else ('Z-score' if norm_method=='zscore' else 'Indexed (first=100)')}",
-            showgrid=False,
-            side="left",
-        )
-        if norm_method == "minmax":
-            yaxis_cfg["range"] = [0, 1]
-
-        fig.layout["yaxis"] = yaxis_cfg
-
-    else:
-        # Non-normalized mode: keep at least one axis on left, additional axes on right
-        for i, (g, pos) in enumerate(zip(used, axis_positions)):
-            # axis identifiers used in traces: 'y' for first, 'y2'/'y3'... for others
-            axis_id_trace = "y" if i == 0 else f"y{i+1}"
-            axis_name = "yaxis" if i == 0 else f"yaxis{i+1}"
-            meta = GROUPS[g]
-            gcols = [c for c in meta["cols"] if c in cols]
-
-            # Add traces for group
-            if g == "precip":
-                y = data[gcols[0]].rolling(24, min_periods=1).sum()
-                fig.add_trace(
-                    go.Scatter(
-                        x=data["time"],
-                        y=y,
-                        name="Precip 24h sum (mm)",
-                        fill="tozeroy",
-                        opacity=0.4,
-                        yaxis=axis_id_trace,
-                    )
-                )
-            else:
-                for c in gcols:
-                    fig.add_trace(
-                        go.Scatter(
-                            x=data["time"],
-                            y=data[c],
-                            mode="lines",
-                            name=c,
-                            yaxis=axis_id_trace,
-                        )
-                    )
-
-            # Axis config: first axis stays on the left (no position set), others on the right and overlay the left
-            axis_settings = dict(
-                title=meta["label"],
-                showgrid=False,
-                side="left" if i == 0 else "right",
             )
-            if i > 0:
-                axis_settings["overlaying"] = "y"
-                axis_settings["position"] = float(pos)
 
-            # Special ticks for wind direction
-            if g == "wdir":
-                ticks = np.linspace(0, 360, 9)
-                labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
-                axis_settings.update(
-                    tickmode="array", tickvals=ticks, ticktext=labels, range=[0, 360]
+        for c in precip_vars:
+            fig.add_trace(
+                go.Bar(
+                    x=df_plot["time"],
+                    y=df_plot[c],
+                    name=c,
+                    marker_color="deepskyblue",
+                    opacity=0.4,
+                    yaxis="y2",
                 )
+            )
 
-            fig.layout[axis_name] = axis_settings
+        for c in dir_vars:
+            fig.add_trace(
+                go.Scatter(
+                    x=df_plot["time"],
+                    y=df_plot[c],
+                    name=c,
+                    mode="lines",
+                    line=dict(width=1, dash="dot", color="orange"),
+                    yaxis="y3",
+                )
+            )
 
-    # --- Layout styling ---
+        fig.update_layout(
+            yaxis=dict(title="Temperature / Wind", showgrid=True),
+            yaxis2=dict(
+                title="Precipitation (mm)",
+                overlaying="y",
+                side="right",
+                showgrid=False,
+                position=0.94,   # just inside plot area
+            ),
+            yaxis3=dict(
+                title="Wind Direction (°)",
+                overlaying="y",
+                side="right",
+                showgrid=False,
+                position=1.0,    # aligned at far right edge
+            ),
+        )
+
+    # --- Normalized mode ---
+    else:
+        for c in cols:
+            fig.add_trace(
+                go.Scatter(
+                    x=df_plot["time"],
+                    y=df_plot[c],
+                    mode="lines",
+                    name=c,
+                    line=dict(width=1.5),
+                )
+            )
+        fig.update_layout(yaxis=dict(title="Normalized scale"))
+
+    # --- Common layout ---
     fig.update_layout(
-        title=f"Weather – {month_sel}",
+        title=f"Weather Variables — {month_label}",
+        template="plotly_white",
         xaxis_title="Time",
-        template="plotly_dark",
-        margin=dict(l=40, r=140, t=50, b=40),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
+        legend=dict(orientation="h", y=-0.3),
+        height=600,
+        margin=dict(l=60, r=80, t=80, b=50),
+        barmode="overlay",
     )
 
     return fig
