@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from statsmodels.tsa.seasonal import STL
+from scipy.signal import spectrogram
+
 
 
 def plot_diverging_line(df, col: str):
@@ -82,7 +86,7 @@ def prepare_first_month_table(df: pd.DataFrame) -> pd.DataFrame:
     return df_rows, first_month
 
 
-# Plots for page 3_Plots.py
+# Weather variable groups for selection
 GROUPS = {
     "temp": {
         "label": "Temperature (°C)",
@@ -103,7 +107,7 @@ GROUPS = {
 }
 
 
-
+# Weather plot function
 def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
     """
     Interactive weather plot with clean axis management.
@@ -214,6 +218,153 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
         height=600,
         margin=dict(l=60, r=80, t=80, b=50),
         barmode="overlay",
+    )
+
+    return fig
+
+
+# STL decomposition plot function
+def plot_stl_decomposition(df, seasonal=30, trend=90):
+    """
+    Plot STL decomposition (trend, seasonal, residual) for production data.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Must contain columns ["starttime", "quantitykwh"].
+    seasonal : int
+        Length of seasonal smoothing window.
+    trend : int
+        Length of trend smoothing window.
+
+    Returns
+    -------
+    fig : plotly.graph_objects.Figure
+        Interactive decomposition chart.
+    """
+    # --- Prepare time series (aggregate duplicates to 1-hour frequency) ---
+    ts = (
+        df.groupby("starttime", as_index=True)["quantitykwh"]
+        .sum()
+        .asfreq("H")
+        .interpolate()
+    )
+
+    # --- Perform STL decomposition ---
+    stl = STL(ts, seasonal=seasonal, trend=trend, robust=True)
+    res = stl.fit()
+
+    # --- Create subplots (stacked vertically) ---
+    fig = make_subplots(
+        rows=4, cols=1, shared_xaxes=True,
+        subplot_titles=("Original Series", "Trend", "Seasonal", "Residuals"),
+        vertical_spacing=0.08
+    )
+
+    # Original
+    fig.add_trace(
+        go.Scatter(
+            x=ts.index, y=ts.values,
+            name="Original", line=dict(color="#4c78a8")
+        ), row=1, col=1
+    )
+
+    # Trend
+    fig.add_trace(
+        go.Scatter(
+            x=ts.index, y=res.trend,
+            name="Trend", line=dict(color="#f58518")
+        ), row=2, col=1
+    )
+
+    # Seasonal
+    fig.add_trace(
+        go.Scatter(
+            x=ts.index, y=res.seasonal,
+            name="Seasonal", line=dict(color="#54a24b")
+        ), row=3, col=1
+    )
+
+    # Residual
+    fig.add_trace(
+        go.Scatter(
+            x=ts.index, y=res.resid,
+            name="Residuals", line=dict(color="#e45756")
+        ), row=4, col=1
+    )
+
+    # --- Layout ---
+    fig.update_layout(
+        height=800,
+        title=f"STL Decomposition – Seasonal={seasonal}, Trend={trend}",
+        showlegend=False,
+        template="plotly_dark",
+        margin=dict(t=80, b=40),
+    )
+    fig.update_xaxes(title="Time", row=4, col=1)
+    fig.update_yaxes(title="kWh")
+
+    return fig
+
+
+# Spectrogram plot function
+def plot_spectrogram(df, window=168, overlap=50):
+    """
+    Plot a frequency spectrogram for production data.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Must contain columns ["starttime", "quantitykwh"].
+    window : int
+        Window length in hours.
+    overlap : int
+        Percentage of overlap between windows (0–90).
+
+    Returns
+    -------
+    fig : plotly.graph_objects.Figure
+        Spectrogram heatmap.
+    """
+    if len(df) < window:
+        raise ValueError("Data length is shorter than the window size.")
+
+    # --- Prepare series ---
+    # --- Prepare time series (aggregate duplicates to 1-hour frequency) ---
+    ts = (
+        df.groupby("starttime", as_index=True)["quantitykwh"]
+        .sum()
+        .asfreq("H")
+        .interpolate()
+    )
+    nperseg = window
+    noverlap = int(window * (overlap / 100))
+
+    # --- Compute spectrogram ---
+    f, t, Sxx = spectrogram(ts.values, fs=1.0, nperseg=nperseg, noverlap=noverlap)
+    Sxx_db = 10 * np.log10(Sxx + 1e-10)
+
+    # --- Time axis mapping ---
+    time_labels = pd.to_datetime(ts.index[0]) + pd.to_timedelta(t, unit="h")
+
+    # --- Plotly heatmap ---
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=Sxx_db,
+            x=time_labels,
+            y=f,
+            colorscale="Viridis",
+            colorbar=dict(title="Power (dB)"),
+        )
+    )
+
+    fig.update_layout(
+        title=f"Spectrogram – Window={window}h, Overlap={overlap}%",
+        xaxis_title="Time",
+        yaxis_title="Frequency [cycles/hour]",
+        height=600,
+        template="plotly_dark",
+        margin=dict(t=70, b=40)
     )
 
     return fig

@@ -2,6 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from pymongo import MongoClient
+from pathlib import Path
+import sys
+# --- Project imports setup ---
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
 from src.ui.sidebar_controls import sidebar_controls
 
 # --- Shared sidebar state (from all pages) ---
