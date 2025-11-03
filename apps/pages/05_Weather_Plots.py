@@ -10,8 +10,12 @@ if str(project_root) not in sys.path:
 
 from src.api.meteo_api import fetch_meteo_data
 from src.analysis.plots import plot_weather
+from src.ui.sidebar_controls import sidebar_controls
 
-# --- Price area → city mapping ---
+# Use the top sidebar_controls only
+price_area, city, lat, lon, year, month = sidebar_controls()
+
+# --- Price area → city mapping (kept for reference if needed) ---
 PRICE_AREA_COORDS = {
     "NO1": ("Oslo", 59.91, 10.75),
     "NO2": ("Kristiansand", 58.15, 8.00),
@@ -23,18 +27,6 @@ PRICE_AREA_COORDS = {
 # --- Page title ---
 st.title("🌦️ Weather Plots")
 
-# --- Sidebar controls ---
-st.sidebar.header("Weather Data Settings")
-
-price_area = st.sidebar.selectbox(
-    "Select Price Area",
-    options=list(PRICE_AREA_COORDS.keys()),
-    index=4,  # Default: Bergen (NO5)
-)
-
-city, lat, lon = PRICE_AREA_COORDS[price_area]
-
-year = st.sidebar.selectbox("Select Year", [2018, 2019, 2020, 2021, 2022], index=1)
 start_date = f"{year}-01-01"
 end_date = f"{year}-12-31"
 
@@ -89,7 +81,8 @@ cols = selected or numeric_cols
 # --- Month filtering ---
 df["month"] = df["time"].dt.to_period("M").astype(str)
 months = sorted(df["month"].unique())
-month_sel = st.select_slider("Select month", options=months, value=months[0])
+# Use the month returned by sidebar_controls() as the default value
+month_sel = st.select_slider("Select month", options=months, value=month if month in months else months[0])
 data = df[df["month"] == month_sel].reset_index(drop=True)
 
 # --- Normalization mode ---

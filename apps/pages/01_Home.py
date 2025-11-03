@@ -3,6 +3,10 @@ import pandas as pd
 from pathlib import Path
 import re
 from calendar import month_name
+from src.ui.sidebar_controls import sidebar_controls
+
+price_area, city, lat, lon, year, month = sidebar_controls()
+
 
 st.title("🏠 Home")
 

@@ -8,6 +8,10 @@ sys.path.append(str(project_root))
 import streamlit as st
 from src.data.load_data import load_csv
 from src.analysis.plots import plot_diverging_line
+from src.ui.sidebar_controls import sidebar_controls
+
+price_area, city, lat, lon, year, month = sidebar_controls()
+
 
 st.title("Dummy Page")
 
