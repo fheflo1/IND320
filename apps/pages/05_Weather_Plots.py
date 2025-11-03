@@ -79,11 +79,27 @@ selected = st.multiselect(
 cols = selected or numeric_cols
 
 # --- Month filtering ---
-df["month"] = df["time"].dt.to_period("M").astype(str)
-months = sorted(df["month"].unique())
-# Use the month returned by sidebar_controls() as the default value
-month_sel = st.select_slider("Select month", options=months, value=month if month in months else months[0])
-data = df[df["month"] == month_sel].reset_index(drop=True)
+df["month"] = df["time"].dt.strftime("%m")
+
+# Ensure sidebar month exists in session_state (sidebar_controls should set this)
+if "month_sel" not in st.session_state:
+    st.session_state["month_sel"] = "01"
+
+selected_year = int(st.session_state["year"])
+selected_month = st.session_state["month_sel"]  # "01", "02", etc.
+
+if selected_month == "ALL":
+    data = df[df["time"].dt.year == int(st.session_state["year"])].reset_index(drop=True)
+    
+elif selected_month not in df["month"].unique():
+    st.warning(f"No data found for month {selected_month} in {selected_year}.")
+    data = pd.DataFrame()  # empty
+
+else:
+    data = df[
+            (df["time"].dt.year == selected_year)
+            & (df["month"] == selected_month)
+        ].reset_index(drop=True)
 
 # --- Normalization mode ---
 mode = st.radio("View mode", ["Auto-axes", "Normalize (common scale)"], horizontal=True)
@@ -94,7 +110,8 @@ if mode.startswith("Normalize"):
     )
 
 # --- Plot ---
-fig = plot_weather(data, cols, month_sel, mode, method)
+month = st.session_state["month_sel"]
+fig = plot_weather(data, cols, month, mode, method)
 st.plotly_chart(fig, use_container_width=True)
 
 # --- Footer ---
