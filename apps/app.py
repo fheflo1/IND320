@@ -1,17 +1,17 @@
 import streamlit as st
 
-st.set_page_config(page_title="IND320 Weather App", layout="wide")
+st.set_page_config(page_title="IND320 Dashboard", layout="wide")
 
-st.title("IND320 – Weather Dashboard")
+st.title("IND320 — Data to Decisions Dashboard")
 st.info(
     """
-    This is a Streamlit app for the course IND320: Data to Decisions.\n
-    So far, it contains interesting pages about meteorological data from Norway.\n
-    Use the sidebar to navigate between the pages.\n
+    This dashboard presents energy production and meteorological analyses 
+    for the IND320 course.  
+    Use the buttons below or the sidebar to explore each section.
     """
 )
 
-# --- CSS for large buttons with two text levels ---
+# --- CSS for consistent button layout ---
 st.markdown(
     """
 <style>
@@ -49,36 +49,43 @@ div.stButton > button:hover {
     unsafe_allow_html=True,
 )
 
-# ---- 2 COLUMNS x 3 ROWS (Dummy on third row) ----
-
-# Row 1
+# --- ROW 1 ---
 col1, col2 = st.columns(2, gap="large")
 with col1:
-    if st.button("🏠 **Home**\n\n Welcome to the dashboard", key="home"):
-        st.switch_page("pages/1_Home.py")
+    if st.button("🏠 **Home Overview**\n\n Data overview and summaries", key="home"):
+        st.switch_page("pages/01_Home_Data_Overview.py")
 with col2:
-    if st.button("📄 **DataTable**\n\n Explore raw data and tables", key="data"):
-        st.switch_page("pages/2_DataTable.py")
+    if st.button("⚡ **Energy Production**\n\n Explore energy data from Elhub", key="energy"):
+        st.switch_page("pages/02_Energy_Production.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 
-# Row 2
+# --- ROW 2 ---
 col3, col4 = st.columns(2, gap="large")
 with col3:
-    if st.button("📈 **Plots**\n\n See interactive visualizations", key="plots"):
-        st.switch_page("pages/3_Plots.py")
+    if st.button("🔍 **Production Analyses (STL & Spectrogram)**\n\n Decompose and analyze patterns", key="stl"):
+        st.switch_page("pages/03_Production_STL_and_Spectrogram.py")
 with col4:
-    if st.button(
-        "🖼️ **Visualization**\n\n Interactive maps and charts", key="visualization"
-    ):
-        st.switch_page("pages/4_Visualization.py")
+    if st.button("🌤️ **Weather Data and Line Charts**\n\n Detailed weather observations", key="weather_data"):
+        st.switch_page("pages/04_Weather_Data_and_Line_Charts.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 
-# Row 3 (Dummy)
+# --- ROW 3 ---
 col5, col6 = st.columns(2, gap="large")
 with col5:
-    if st.button("🧪 **Dummy**\n\n Experimental page with test plots", key="dummy"):
-        st.switch_page("pages/5_Dummy.py")
+    if st.button("📊 **Weather Plots**\n\n Interactive visualizations of meteorological data", key="weather_plots"):
+        st.switch_page("pages/05_Weather_Plots.py")
 with col6:
-    st.write("")  # empty column for alignment
+    if st.button("🧭 **Meteo Analyses**\n\n Outlier and anomaly detection (SPC & LOF)", key="meteo_analyses"):
+        st.switch_page("pages/06_Meteo_Analyses.py")
+
+st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+
+# --- ROW 4 (Dummy / Future work) ---
+col7, col8 = st.columns(2, gap="large")
+with col7:
+    if st.button("🧪 **Dummy / Sandbox**\n\n Experimental and development area", key="dummy"):
+        st.switch_page("pages/07_Dummy.py")
+with col8:
+    st.write("")  # for alignment
