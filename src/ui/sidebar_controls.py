@@ -19,7 +19,7 @@ def sidebar_controls():
     # (Only the first time in an app session)
     if not all(k in st.session_state for k in ["price_area", "year", "month_sel"]):
         st.session_state["price_area"] = "NO1"
-        st.session_state["year"] = 2022
+        st.session_state["year"] = 2021
         st.session_state["month_sel"] = "01"
 
     # --- Step 2: Widgets use the current state values ---
