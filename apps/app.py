@@ -3,6 +3,9 @@ import streamlit as st
 st.set_page_config(page_title="IND320 Dashboard", layout="wide")
 
 st.title("IND320 — Data to Decisions Dashboard")
+st.markdown(
+    "<div style='height: 25px'></div>", unsafe_allow_html=True
+)
 st.info(
     """
     This dashboard presents energy production and meteorological analyses 
@@ -12,42 +15,67 @@ st.info(
 )
 
 # --- CSS for consistent button layout ---
-st.markdown(
-    """
+st.markdown("""
 <style>
+/* Center all Streamlit elements on the page */
+.main > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Style for buttons */
 div.stButton > button {
-    width: 650px;
-    height: 200px;
-    border-radius: 16px;
-    background: #308CBA;
+    width: 90%;
+    max-width: 480px;
+    min-height: 160px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #308CBA, #256EA3);
     color: #EDEFF2;
-    border: 1px solid rgba(255,255,255,0.10);
-    transition: all .2s ease;
+    border: none;
+    font-size: 18px;
+    font-weight: 500;
+    transition: all .25s ease;
     cursor: pointer;
     text-align: center;
-    padding: 20px;
+    padding: 18px;
+    margin: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
 }
+
+/* Hover animation */
 div.stButton > button:hover {
-    background: #2A2A2A;
-    border-color: rgba(255,255,255,0.20);
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    background: linear-gradient(135deg, #2A2A2A, #1E1E1E);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
-.big-title {
-    font-size: 28px;
-    font-weight: bold;
-    display: block;
-    margin-bottom: 8px;
+
+/* Responsive scaling */
+@media (max-width: 1600px) {
+    div.stButton > button {
+        min-height: 140px;
+        font-size: 16px;
+    }
 }
-.small-sub {
-    font-size: 16px;
-    color: #bbb;
-    display: block;
+@media (max-width: 1200px) {
+    div[data-testid="column"] {
+        flex: 1 1 100% !important;
+    }
+    div.stButton > button {
+        width: 100%;
+        min-height: 130px;
+    }
+}
+@media (max-width: 800px) {
+    div.stButton > button {
+        font-size: 15px;
+        min-height: 120px;
+    }
 }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
+
+
 
 # --- ROW 1 ---
 col1, col2 = st.columns(2, gap="large")
