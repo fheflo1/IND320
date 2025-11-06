@@ -11,3 +11,6 @@ plotly
 scikit-learn
 scipy
 statsmodels
+openmeteo-requests
+requests-cache
+retry-requests
