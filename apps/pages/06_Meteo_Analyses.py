@@ -3,11 +3,12 @@ import plotly.graph_objects as go
 import pandas as pd
 from pathlib import Path
 import sys
+
 # --- Project imports setup ---
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
-    
+
 from src.analysis.anomaly_detection import (
     detect_temperature_outliers,
     detect_precipitation_anomalies,
@@ -19,6 +20,7 @@ from src.api.meteo_api import fetch_meteo_data
 st.title("🌡️ Meteo Analyses (Open-Meteo)")
 
 price_area, city, lat, lon, year, month = sidebar_controls()
+
 
 # --- Fetch weather data ---
 @st.cache_data(ttl=3600)
@@ -40,6 +42,7 @@ def get_weather(lat, lon, start, end):
     df["time"] = pd.to_datetime(df["time"])
     return df
 
+
 start_date, end_date = f"{year}-01-01", f"{year}-12-31"
 df = get_weather(lat, lon, start_date, end_date)
 
@@ -59,28 +62,58 @@ with tab1:
         result = detect_temperature_outliers(df, cutoff, std_thresh)
 
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=result["time"], y=result["temperature"],
-                                 mode="lines", name="Temperature",
-                                 line=dict(color="#4c78a8")))
-        fig.add_trace(go.Scatter(x=result["time"], y=result["smoothed"],
-                                 mode="lines", name="Smoothed",
-                                 line=dict(color="#f58518")))
-        fig.add_trace(go.Scatter(x=result["time"], y=result["UCL"],
-                                 mode="lines", name="UCL", line=dict(dash="dot", color="red")))
-        fig.add_trace(go.Scatter(x=result["time"], y=result["LCL"],
-                                 mode="lines", name="LCL", line=dict(dash="dot", color="red")))
+        fig.add_trace(
+            go.Scatter(
+                x=result["time"],
+                y=result["temperature"],
+                mode="lines",
+                name="Temperature",
+                line=dict(color="#4c78a8"),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=result["time"],
+                y=result["smoothed"],
+                mode="lines",
+                name="Smoothed",
+                line=dict(color="#f58518"),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=result["time"],
+                y=result["UCL"],
+                mode="lines",
+                name="UCL",
+                line=dict(dash="dot", color="red"),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=result["time"],
+                y=result["LCL"],
+                mode="lines",
+                name="LCL",
+                line=dict(dash="dot", color="red"),
+            )
+        )
 
         # Highlight outliers
-        fig.add_trace(go.Scatter(
-            x=result.loc[result["outlier"], "time"],
-            y=result.loc[result["outlier"], "temperature"],
-            mode="markers", name="Outliers",
-            marker=dict(color="red", size=6, symbol="circle"),
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=result.loc[result["outlier"], "time"],
+                y=result.loc[result["outlier"], "temperature"],
+                mode="markers",
+                name="Outliers",
+                marker=dict(color="red", size=6, symbol="circle"),
+            )
+        )
 
         fig.update_layout(
             title="SPC Temperature Outlier Detection",
-            template="plotly_dark", height=500,
+            template="plotly_dark",
+            height=500,
             legend=dict(orientation="h", y=-0.2),
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -106,19 +139,29 @@ with tab2:
         result = detect_precipitation_anomalies(df, outlier_prop)
 
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=result["time"], y=result["precipitation"],
-                                 mode="lines", name="Precipitation",
-                                 line=dict(color="#54a24b")))
-        fig.add_trace(go.Scatter(
-            x=result.loc[result["anomaly"], "time"],
-            y=result.loc[result["anomaly"], "precipitation"],
-            mode="markers", name="Anomalies",
-            marker=dict(color="red", size=6, symbol="x")
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=result["time"],
+                y=result["precipitation"],
+                mode="lines",
+                name="Precipitation",
+                line=dict(color="#54a24b"),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=result.loc[result["anomaly"], "time"],
+                y=result.loc[result["anomaly"], "precipitation"],
+                mode="markers",
+                name="Anomalies",
+                marker=dict(color="red", size=6, symbol="x"),
+            )
+        )
 
         fig.update_layout(
             title="LOF Precipitation Anomalies",
-            template="plotly_dark", height=500,
+            template="plotly_dark",
+            height=500,
             legend=dict(orientation="h", y=-0.2),
         )
         st.plotly_chart(fig, use_container_width=True)

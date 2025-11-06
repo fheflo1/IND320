@@ -3,9 +3,7 @@ import streamlit as st
 st.set_page_config(page_title="IND320 Dashboard", layout="wide")
 
 st.title("IND320 — Data to Decisions Dashboard")
-st.markdown(
-    "<div style='height: 25px'></div>", unsafe_allow_html=True
-)
+st.markdown("<div style='height: 25px'></div>", unsafe_allow_html=True)
 st.info(
     """
     This dashboard presents energy production and meteorological analyses 
@@ -15,7 +13,8 @@ st.info(
 )
 
 # --- CSS for consistent button layout ---
-st.markdown("""
+st.markdown(
+    """
 <style>
 /* Center all Streamlit elements on the page */
 .main > div {
@@ -73,8 +72,9 @@ div.stButton > button:hover {
     }
 }
 </style>
-""", unsafe_allow_html=True)
-
+""",
+    unsafe_allow_html=True,
+)
 
 
 # --- ROW 1 ---
@@ -83,7 +83,9 @@ with col1:
     if st.button("🏠 **Home Overview**\n\n Data overview and summaries", key="home"):
         st.switch_page("pages/01_Home_Data_Overview.py")
 with col2:
-    if st.button("⚡ **Energy Production**\n\n Explore energy data from Elhub", key="energy"):
+    if st.button(
+        "⚡ **Energy Production**\n\n Explore energy data from Elhub", key="energy"
+    ):
         st.switch_page("pages/02_Energy_Production.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
@@ -91,10 +93,16 @@ st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 # --- ROW 2 ---
 col3, col4 = st.columns(2, gap="large")
 with col3:
-    if st.button("🔍 **Production Analyses (STL & Spectrogram)**\n\n Decompose and analyze patterns", key="stl"):
+    if st.button(
+        "🔍 **Production Analyses (STL & Spectrogram)**\n\n Decompose and analyze patterns",
+        key="stl",
+    ):
         st.switch_page("pages/03_Production_STL_and_Spectrogram.py")
 with col4:
-    if st.button("🌤️ **Weather Data and Line Charts**\n\n Detailed weather observations", key="weather_data"):
+    if st.button(
+        "🌤️ **Weather Data and Line Charts**\n\n Detailed weather observations",
+        key="weather_data",
+    ):
         st.switch_page("pages/04_Weather_Data_and_Line_Charts.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
@@ -102,10 +110,16 @@ st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 # --- ROW 3 ---
 col5, col6 = st.columns(2, gap="large")
 with col5:
-    if st.button("📊 **Weather Plots**\n\n Interactive visualizations of meteorological data", key="weather_plots"):
+    if st.button(
+        "📊 **Weather Plots**\n\n Interactive visualizations of meteorological data",
+        key="weather_plots",
+    ):
         st.switch_page("pages/05_Weather_Plots.py")
 with col6:
-    if st.button("🧭 **Meteo Analyses**\n\n Outlier and anomaly detection (SPC & LOF)", key="meteo_analyses"):
+    if st.button(
+        "🧭 **Meteo Analyses**\n\n Outlier and anomaly detection (SPC & LOF)",
+        key="meteo_analyses",
+    ):
         st.switch_page("pages/06_Meteo_Analyses.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
@@ -113,7 +127,9 @@ st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 # --- ROW 4 (Dummy / Future work) ---
 col7, col8 = st.columns(2, gap="large")
 with col7:
-    if st.button("🧪 **Dummy / Sandbox**\n\n Experimental and development area", key="dummy"):
+    if st.button(
+        "🧪 **Dummy / Sandbox**\n\n Experimental and development area", key="dummy"
+    ):
         st.switch_page("pages/07_Dummy.py")
 with col8:
     st.write("")  # for alignment

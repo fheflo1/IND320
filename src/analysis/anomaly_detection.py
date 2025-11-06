@@ -45,14 +45,16 @@ def detect_temperature_outliers(df, cutoff=0.05, std_thresh=3.0):
     UCL, LCL = mu + std_thresh * sigma, mu - std_thresh * sigma
     outliers = (temps > UCL) | (temps < LCL)
 
-    df_out = pd.DataFrame({
-        "time": df["time"],
-        "temperature": temps,
-        "smoothed": smoothed,
-        "UCL": UCL,
-        "LCL": LCL,
-        "outlier": outliers,
-    })
+    df_out = pd.DataFrame(
+        {
+            "time": df["time"],
+            "temperature": temps,
+            "smoothed": smoothed,
+            "UCL": UCL,
+            "LCL": LCL,
+            "outlier": outliers,
+        }
+    )
     return df_out
 
 
@@ -85,9 +87,11 @@ def detect_precipitation_anomalies(df, outlier_prop=0.01):
     preds = lof.fit_predict(vals)
     anomaly = preds == -1
 
-    df_out = pd.DataFrame({
-        "time": df["time"],
-        "precipitation": df["precipitation"],
-        "anomaly": anomaly,
-    })
+    df_out = pd.DataFrame(
+        {
+            "time": df["time"],
+            "precipitation": df["precipitation"],
+            "anomaly": anomaly,
+        }
+    )
     return df_out

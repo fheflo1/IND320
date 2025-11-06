@@ -30,6 +30,7 @@ st.title("🌦️ Weather Plots")
 start_date = f"{year}-01-01"
 end_date = f"{year}-12-31"
 
+
 # --- Cached data fetch ---
 @st.cache_data(ttl=3600, show_spinner="Fetching weather data from Open-Meteo...")
 def get_meteo_data(lat, lon, start, end):
@@ -89,17 +90,18 @@ selected_year = int(st.session_state["year"])
 selected_month = st.session_state["month_sel"]  # "01", "02", etc.
 
 if selected_month == "ALL":
-    data = df[df["time"].dt.year == int(st.session_state["year"])].reset_index(drop=True)
-    
+    data = df[df["time"].dt.year == int(st.session_state["year"])].reset_index(
+        drop=True
+    )
+
 elif selected_month not in df["month"].unique():
     st.warning(f"No data found for month {selected_month} in {selected_year}.")
     data = pd.DataFrame()  # empty
 
 else:
     data = df[
-            (df["time"].dt.year == selected_year)
-            & (df["month"] == selected_month)
-        ].reset_index(drop=True)
+        (df["time"].dt.year == selected_year) & (df["month"] == selected_month)
+    ].reset_index(drop=True)
 
 # --- Normalization mode ---
 mode = st.radio("View mode", ["Auto-axes", "Normalize (common scale)"], horizontal=True)

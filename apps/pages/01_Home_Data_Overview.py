@@ -149,9 +149,7 @@ with col_energy:
     else:
         # --- Aggregation ---
         if month == "ALL":
-            monthly_totals = (
-                filtered.groupby("month")["quantitykwh"].sum().sort_index()
-            )
+            monthly_totals = filtered.groupby("month")["quantitykwh"].sum().sort_index()
 
             st.markdown(f"**Total production by month in {year} ({price_area})**")
             st.bar_chart(monthly_totals)
@@ -209,4 +207,6 @@ with summary_cols[1]:
     else:
         st.write("No Elhub data loaded.")
 
-st.caption("💡 Tip: Use the sidebar to change year, area, or month — both datasets update automatically.")
+st.caption(
+    "💡 Tip: Use the sidebar to change year, area, or month — both datasets update automatically."
+)

@@ -4,6 +4,7 @@ import plotly.express as px
 from pymongo import MongoClient
 from pathlib import Path
 import sys
+
 # --- Project imports setup ---
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
@@ -13,6 +14,7 @@ from src.ui.sidebar_controls import sidebar_controls
 
 # --- Shared sidebar state (from all pages) ---
 price_area, city, lat, lon, year, month = sidebar_controls()
+
 
 # --- MongoDB client setup ---
 @st.cache_resource
@@ -64,14 +66,12 @@ month_names = {
 
 # --- Consistent color mapping for all charts ---
 COLOR_MAP = {
-    "hydro": "#2E8B92",     # teal
-    "thermal": "#E6B800",   # warm yellow
-    "solar": "#E68A00",     # orange
-    "other": "#CBA0FF",     # soft purple
+    "hydro": "#2E8B92",  # teal
+    "thermal": "#E6B800",  # warm yellow
+    "solar": "#E68A00",  # orange
+    "other": "#CBA0FF",  # soft purple
 }
-CATEGORY_ORDER = {
-    "productiongroup": ["hydro", "thermal", "wind", "solar", "other"]
-}
+CATEGORY_ORDER = {"productiongroup": ["hydro", "thermal", "wind", "solar", "other"]}
 
 
 # --- Session defaults ---
@@ -80,6 +80,7 @@ if "selected_groups" not in st.session_state:
 
 # --- Layout ---
 col1, col2 = st.columns(2)
+
 
 # --- Shared filter function ---
 def get_filtered_data(df):
@@ -116,7 +117,11 @@ with col1:
 with col2:
     st.subheader("Production Trends")
 
-    available_groups = [g for g in CATEGORY_ORDER["productiongroup"] if g in df["productiongroup"].unique()]
+    available_groups = [
+        g
+        for g in CATEGORY_ORDER["productiongroup"]
+        if g in df["productiongroup"].unique()
+    ]
 
     selected_groups = st.pills(
         "Select production group(s):",

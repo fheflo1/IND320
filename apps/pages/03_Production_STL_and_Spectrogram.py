@@ -3,6 +3,7 @@ import pandas as pd
 from pymongo import MongoClient
 from pathlib import Path
 import sys
+
 # --- Project imports setup ---
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
@@ -18,10 +19,12 @@ price_area, city, lat, lon, year, month = sidebar_controls()
 st.title("🎯 Production Analyses (Elhub)")
 st.caption("Analyze production data by STL decomposition and frequency spectrum.")
 
+
 # --- Mongo connection ---
 @st.cache_resource
 def get_mongo_client():
     return MongoClient(st.secrets["mongo"]["uri"])
+
 
 @st.cache_data(ttl=600)
 def load_elhub_data():
@@ -34,6 +37,7 @@ def load_elhub_data():
     df["month"] = df["starttime"].dt.strftime("%m")
     return df
 
+
 with st.spinner("Loading Elhub data..."):
     df = load_elhub_data()
 
@@ -43,15 +47,12 @@ if month != "ALL":
     filtered = filtered[filtered["month"] == month]
 
 groups = filtered["productiongroup"].unique()
-CATEGORY_ORDER = {
-    "productiongroup": ["hydro", "thermal", "wind", "solar", "other"]
-}
+CATEGORY_ORDER = {"productiongroup": ["hydro", "thermal", "wind", "solar", "other"]}
 
 # Sort groups according to CATEGORY_ORDER, putting unknown groups at the end
-ordered_groups = (
-    [g for g in CATEGORY_ORDER["productiongroup"] if g in groups] +
-    [g for g in groups if g not in CATEGORY_ORDER["productiongroup"]]
-)
+ordered_groups = [g for g in CATEGORY_ORDER["productiongroup"] if g in groups] + [
+    g for g in groups if g not in CATEGORY_ORDER["productiongroup"]
+]
 
 # --- Tabs for analyses ---
 tab1, tab2 = st.tabs(["📈 STL Analysis", "🎧 Spectrogram"])
@@ -66,9 +67,9 @@ with tab1:
 
     # --- STL Parameter Controls ---
     st.markdown("**STL Parameters**")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col2:
         trend = st.number_input(
             "Trend Window",
@@ -76,20 +77,18 @@ with tab1:
             max_value=365,
             value=169,
             step=2,
-            help="Larger values give smoother trend."
+            help="Larger values give smoother trend.",
         )
-    
+
     with col1:
         seasonal = st.number_input(
             "Seasonal Period",
             min_value=3,
-            max_value=min(trend-1, 179),
+            max_value=min(trend - 1, 179),
             value=25,
             step=2,
-            help="Number of observations per seasonal period. Must be odd and less than trend."
+            help="Number of observations per seasonal period. Must be odd and less than trend.",
         )
-
-
 
     subset = (
         filtered[filtered["productiongroup"] == prod_group]

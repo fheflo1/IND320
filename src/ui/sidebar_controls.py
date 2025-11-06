@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def sidebar_controls():
     """Shared sidebar that persists across pages within the same session."""
     st.sidebar.header("Select Location and Period")

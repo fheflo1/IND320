@@ -6,7 +6,6 @@ from statsmodels.tsa.seasonal import STL
 from scipy.signal import spectrogram
 
 
-
 def plot_diverging_line(df, col: str):
     pts = df[["time", col]].copy()
     pts["time"] = pd.to_datetime(pts["time"])
@@ -184,14 +183,14 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
                 overlaying="y",
                 side="right",
                 showgrid=False,
-                position=0.94,   # just inside plot area
+                position=0.94,  # just inside plot area
             ),
             yaxis3=dict(
                 title="Wind Direction (°)",
                 overlaying="y",
                 side="right",
                 showgrid=False,
-                position=1.0,    # aligned at far right edge
+                position=1.0,  # aligned at far right edge
             ),
         )
 
@@ -256,41 +255,45 @@ def plot_stl_decomposition(df, seasonal=30, trend=90):
 
     # --- Create subplots (stacked vertically) ---
     fig = make_subplots(
-        rows=4, cols=1, shared_xaxes=True,
+        rows=4,
+        cols=1,
+        shared_xaxes=True,
         subplot_titles=("Original Series", "Trend", "Seasonal", "Residuals"),
-        vertical_spacing=0.08
+        vertical_spacing=0.08,
     )
 
     # Original
     fig.add_trace(
         go.Scatter(
-            x=ts.index, y=ts.values,
-            name="Original", line=dict(color="#4c78a8")
-        ), row=1, col=1
+            x=ts.index, y=ts.values, name="Original", line=dict(color="#4c78a8")
+        ),
+        row=1,
+        col=1,
     )
 
     # Trend
     fig.add_trace(
-        go.Scatter(
-            x=ts.index, y=res.trend,
-            name="Trend", line=dict(color="#f58518")
-        ), row=2, col=1
+        go.Scatter(x=ts.index, y=res.trend, name="Trend", line=dict(color="#f58518")),
+        row=2,
+        col=1,
     )
 
     # Seasonal
     fig.add_trace(
         go.Scatter(
-            x=ts.index, y=res.seasonal,
-            name="Seasonal", line=dict(color="#54a24b")
-        ), row=3, col=1
+            x=ts.index, y=res.seasonal, name="Seasonal", line=dict(color="#54a24b")
+        ),
+        row=3,
+        col=1,
     )
 
     # Residual
     fig.add_trace(
         go.Scatter(
-            x=ts.index, y=res.resid,
-            name="Residuals", line=dict(color="#e45756")
-        ), row=4, col=1
+            x=ts.index, y=res.resid, name="Residuals", line=dict(color="#e45756")
+        ),
+        row=4,
+        col=1,
     )
 
     # --- Layout ---
@@ -364,7 +367,7 @@ def plot_spectrogram(df, window=168, overlap=50):
         yaxis_title="Frequency [cycles/hour]",
         height=600,
         template="plotly_dark",
-        margin=dict(t=70, b=40)
+        margin=dict(t=70, b=40),
     )
 
     return fig

@@ -30,6 +30,7 @@ start_date = f"{year}-{month}-01"
 end_date = pd.Timestamp(start_date) + pd.offsets.MonthEnd(1)
 end_date = end_date.strftime("%Y-%m-%d")
 
+
 # --- Fetch and cache data from API ---
 @st.cache_data(ttl=3600, show_spinner="Fetching weather data from Open-Meteo...")
 def get_meteo_data(lat, lon, start, end):
@@ -49,6 +50,7 @@ def get_meteo_data(lat, lon, start, end):
     df = df.reset_index().rename(columns={"index": "time"})
     df["time"] = pd.to_datetime(df["time"])
     return df
+
 
 # --- Load data ---
 df = get_meteo_data(lat, lon, start_date, end_date)
