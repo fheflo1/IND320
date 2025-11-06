@@ -123,13 +123,3 @@ with col6:
         st.switch_page("pages/06_Meteo_Analyses.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-
-# --- ROW 4 (Dummy / Future work) ---
-col7, col8 = st.columns(2, gap="large")
-with col7:
-    if st.button(
-        "🧪 **Dummy / Sandbox**\n\n Experimental and development area", key="dummy"
-    ):
-        st.switch_page("pages/07_Dummy.py")
-with col8:
-    st.write("")  # for alignment
