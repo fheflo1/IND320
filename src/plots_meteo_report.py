@@ -3,13 +3,14 @@ import pandas as pd
 import numpy as np
 from scipy.fftpack import dct, idct
 
+
 # ======================================================
 # 1️⃣ Temperature Outlier Plot (SPC)
 # ======================================================
 def plot_temperature_outliers(df, freq_cutoff, std_thresh):
     """
     Plot temperature signal with DCT filtering and SPC-based outlier highlighting.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
@@ -39,11 +40,15 @@ def plot_temperature_outliers(df, freq_cutoff, std_thresh):
     # --- Plot ---
     plt.figure(figsize=(12, 5))
     plt.plot(df.index, df["temperature_2m"], color="gray", alpha=0.6, label="Observed")
-    plt.plot(df.index, df["filtered"], color="blue", linewidth=1.5, label="Filtered signal")
+    plt.plot(
+        df.index, df["filtered"], color="blue", linewidth=1.5, label="Filtered signal"
+    )
     plt.scatter(
         df.index[df["outlier"]],
         df.loc[df["outlier"], "temperature_2m"],
-        color="red", s=25, label="Outliers"
+        color="red",
+        s=25,
+        label="Outliers",
     )
     plt.title(f"Temperature Outlier Detection (cutoff={freq_cutoff}, ±{std_thresh}σ)")
     plt.xlabel("Time")
@@ -59,10 +64,11 @@ def plot_temperature_outliers(df, freq_cutoff, std_thresh):
 # ======================================================
 from sklearn.neighbors import LocalOutlierFactor
 
+
 def plot_precipitation_anomalies(df, contamination=0.01):
     """
     Plot precipitation data with anomalies detected using LOF.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
@@ -81,11 +87,15 @@ def plot_precipitation_anomalies(df, contamination=0.01):
 
     # --- Plot ---
     plt.figure(figsize=(12, 5))
-    plt.plot(df.index, df["precipitation"], color="blue", linewidth=1, label="Precipitation")
+    plt.plot(
+        df.index, df["precipitation"], color="blue", linewidth=1, label="Precipitation"
+    )
     plt.scatter(
         df.index[df["anomaly"]],
         df.loc[df["anomaly"], "precipitation"],
-        color="red", s=25, label="Anomalies"
+        color="red",
+        s=25,
+        label="Anomalies",
     )
     plt.title(f"Precipitation Anomaly Detection (LOF, {int(contamination*100)}%)")
     plt.xlabel("Time")
