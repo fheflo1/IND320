@@ -220,3 +220,5 @@ meteo_bergen_2019.csv
 
 
 .cache.sqlite
+
+data/plots/
