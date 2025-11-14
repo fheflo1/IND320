@@ -5,71 +5,101 @@ from datetime import datetime, timezone, timedelta
 
 BASE_URL = "https://api.elhub.no/energy-data/v0/price-areas"
 
+PRICE_AREAS = ["NO1","NO2","NO3","NO4","NO5"]
 
-def _iso_date(dt: datetime) -> str:
-    """Return ISO8601 with +02:00 offset."""
+
+def _iso_cet(dt: datetime) -> str:
+    """
+    Convert naive datetime to proper CET/CEST ISO8601.
+    """
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone(timedelta(hours=2)))
+        # Auto-detect DST: EU rules → last Sunday in March/October
+        # but Python handles this with zoneinfo
+        from zoneinfo import ZoneInfo
+        dt = dt.replace(tzinfo=ZoneInfo("Europe/Oslo"))
     return dt.isoformat()
 
 
 def fetch_elhub_data(
-    start_time: datetime, end_time: datetime, max_retries: int = 3
+    start_time: datetime,
+    end_time: datetime,
+    dataset: str = "PRODUCTION_PER_GROUP_MBA_HOUR",
+    max_retries: int = 5,
 ) -> pd.DataFrame:
     """
-    Fetch production data from Elhub API for given time range.
-    Returns a flat DataFrame with hourly production per price area.
+    Fetch Elhub data for ALL price areas for a given dataset and range.
+    Returns a flat DataFrame.
     """
-    params = {
-        "dataset": "PRODUCTION_PER_GROUP_MBA_HOUR",
-        "startDate": _iso_date(start_time),
-        "endDate": _iso_date(end_time),
-    }
 
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(BASE_URL, params=params)
-            status = response.status_code
+    all_records = []
 
-            if status == 200:
-                data = response.json()
-                return _parse_elhub_response(data)
+    for area in PRICE_AREAS:
 
-            elif status == 204:
-                print(f"ℹ️ No data for {start_time.date()} → {end_time.date()}")
-                return pd.DataFrame()
+        params = {
+            "dataset": dataset,
+            "startDate": _iso_cet(start_time),
+            "endDate": _iso_cet(end_time),
+        }
 
-            elif status == 429:
-                wait = int(response.headers.get("Retry-After", 5))
-                print(f"⚠️ Rate limited. Waiting {wait} seconds...")
-                time.sleep(wait)
-                continue
+        url = f"{BASE_URL}/{area}"
 
-            else:
-                print(f"⚠️ HTTP {status}: {response.url}")
-                print(response.text[:200])
-                return pd.DataFrame()
+        for attempt in range(max_retries):
 
-        except Exception as e:
-            print(f"❌ Request failed ({attempt+1}/{max_retries}): {e}")
-            time.sleep(2)
+            try:
+                resp = requests.get(url, params=params, timeout=10)
+                status = resp.status_code
 
-    return pd.DataFrame()
+                if status == 200:
+                    data = resp.json()
+                    records = _parse_elhub_response(data, area)
+                    all_records.extend(records)
+                    break  # done with this price area
+
+                elif status == 204:
+                    break
+
+                elif status == 429:
+                    wait = int(resp.headers.get("Retry-After", 5))
+                    print(f"⚠️ Rate limited ({area}). Waiting {wait}s...")
+                    time.sleep(wait)
+                    continue
+
+                elif status in (500, 503):
+                    wait = 2 ** attempt
+                    print(f"⚠️ Server error {status}. Retry in {wait}s...")
+                    time.sleep(wait)
+                    continue
+
+                else:
+                    print(f"⚠️ HTTP {status} for {url}")
+                    print(resp.text[:200])
+                    break
+
+            except Exception as e:
+                print(f"❌ Exception ({attempt+1}/{max_retries}): {e}")
+                time.sleep(2)
+
+    return pd.DataFrame(all_records)
 
 
-def _parse_elhub_response(data: dict) -> pd.DataFrame:
-    """Flatten JSON:API structure into a DataFrame."""
-    if "data" not in data:
-        print("⚠️ Unexpected response keys:", data.keys())
-        return pd.DataFrame()
-
+def _parse_elhub_response(data: dict, area: str):
+    """
+    Correctly parse both "data" and "included" structures.
+    """
     records = []
-    for item in data["data"]:
-        attrs = item.get("attributes", {})
-        area_name = attrs.get("name", None)
-        mba_list = attrs.get("productionPerGroupMbaHour", [])
-        for mba in mba_list:
-            mba["meteringgridarea"] = area_name
-            records.append(mba)
 
-    return pd.DataFrame(records)
+    # Primary structure
+    for item in data.get("data", []):
+        attrs = item.get("attributes", {})
+        for entry in attrs.get("productionPerGroupMbaHour", []):
+            entry["priceArea"] = area
+            records.append(entry)
+
+    # Secondary structure: some datasets hide data in "included"
+    for inc in data.get("included", []):
+        attrs = inc.get("attributes", {})
+        for entry in attrs.get("productionPerGroupMbaHour", []):
+            entry["priceArea"] = area
+            records.append(entry)
+
+    return records
