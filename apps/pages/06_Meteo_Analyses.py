@@ -80,24 +80,6 @@ with tab1:
                 line=dict(color="#f58518"),
             )
         )
-        fig.add_trace(
-            go.Scatter(
-                x=result["time"],
-                y=result["UCL"],
-                mode="lines",
-                name="UCL",
-                line=dict(dash="dot", color="red"),
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=result["time"],
-                y=result["LCL"],
-                mode="lines",
-                name="LCL",
-                line=dict(dash="dot", color="red"),
-            )
-        )
 
         # Highlight outliers
         fig.add_trace(
