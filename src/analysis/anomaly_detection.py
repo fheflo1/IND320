@@ -55,15 +55,17 @@ def detect_temperature_outliers(df, cutoff=0.1, std_thresh=2.0):
     # -------------------------
     outliers = (satv > UCL) | (satv < LCL)
 
-    return pd.DataFrame({
-        "time": df["time"],
-        "temperature": temps,
-        "smoothed": smoothed,
-        "SATV": satv,
-        "UCL": UCL,
-        "LCL": LCL,
-        "outlier": outliers,
-    })
+    return pd.DataFrame(
+        {
+            "time": df["time"],
+            "temperature": temps,
+            "smoothed": smoothed,
+            "SATV": satv,
+            "UCL": UCL,
+            "LCL": LCL,
+            "outlier": outliers,
+        }
+    )
 
 
 # ------------------------------------------------------------
