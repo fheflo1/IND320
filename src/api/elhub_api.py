@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 BASE_URL = "https://api.elhub.no/energy-data/v0/price-areas"
 
 
-PRICE_AREAS = ["NO1","NO2","NO3","NO4","NO5"]
+PRICE_AREAS = ["NO1", "NO2", "NO3", "NO4", "NO5"]
 
 
 def _iso_cet(dt: datetime) -> str:
@@ -17,6 +17,7 @@ def _iso_cet(dt: datetime) -> str:
         # Auto-detect DST: EU rules → last Sunday in March/October
         # but Python handles this with zoneinfo
         from zoneinfo import ZoneInfo
+
         dt = dt.replace(tzinfo=ZoneInfo("Europe/Oslo"))
     return dt.isoformat()
 
@@ -75,7 +76,6 @@ def fetch_elhub_data(
                 print(f"❌ Error fetching {area}: {e}")
                 time.sleep(2)
 
-
     return pd.DataFrame(all_records)
 
 
@@ -108,4 +108,3 @@ def _parse_elhub_response(data: dict, area: str, dataset: str):
             records.append(entry)
 
     return records
-
