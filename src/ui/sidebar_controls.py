@@ -13,7 +13,7 @@ def sidebar_controls():
         "NO5": ("Bergen", 60.39, 5.32),
     }
 
-    years = [2018, 2019, 2020, 2021, 2022]
+    years = [2018, 2019, 2020, 2021, 2022, 2023, 2024]
     months = ["ALL"] + [f"{i:02d}" for i in range(1, 13)]
 
     # --- Step 1: Prepopulate Streamlit session_state if empty ---
