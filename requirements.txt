@@ -14,3 +14,4 @@ statsmodels
 openmeteo-requests
 requests-cache
 retry-requests
+seaborn
