@@ -4,58 +4,66 @@ from scipy.fftpack import dct, idct
 from sklearn.neighbors import LocalOutlierFactor
 
 
-# ------------------------------------------------------------
-# 1️⃣ Temperature Outlier Detection (SPC + DCT smoothing)
-# ------------------------------------------------------------
-def detect_temperature_outliers(df, cutoff=0.05, std_thresh=3.0):
+def detect_temperature_outliers(df, cutoff=0.1, std_thresh=2.0):
     """
-    Detect temperature outliers using DCT low-pass filtering + SPC bounds.
+    Detect temperature outliers using SATV (DCT high-pass) + SPC.
 
-    Parameters
-    ----------
-    df : DataFrame
-        Must contain ["time", "temperature_2m"].
-    cutoff : float
-        Frequency cutoff for DCT (fraction of coefficients kept).
-    std_thresh : float
-        STD-based threshold for control limits.
+    Steps:
+    1. Smooth temperature with low-pass DCT to remove noise.
+    2. Compute SATV = temperature - smoothed.
+    3. Compute SPC limits from SATV only.
+    4. Outliers = original temperature where SATV is outside SPC limits.
 
-    Returns
-    -------
-    df_out : DataFrame with columns [time, temp, smoothed, outlier, UCL, LCL].
+    Returns:
+        DataFrame with temperature, smoothed, SATV, UCL, LCL, outlier.
     """
-    df = df.copy()
-    df = df.dropna(subset=["temperature_2m"])
+
+    df = df.copy().dropna(subset=["temperature_2m"])
     df = df.sort_values("time")
 
     temps = df["temperature_2m"].to_numpy()
     n = len(temps)
-    if n < 10:
-        raise ValueError("Not enough temperature data.")
 
-    # --- DCT low-pass smoothing ---
+    if n < 20:
+        raise ValueError("Not enough data points for SATV/SPC.")
+
+    # -------------------------
+    # 1. DCT smoothing (low-pass)
+    # -------------------------
     coeffs = dct(temps, norm="ortho")
     k = int(cutoff * n)
-    coeffs[k:] = 0
-    smoothed = idct(coeffs, norm="ortho")
 
-    # --- SPC limits ---
-    mu = np.mean(smoothed)
-    sigma = np.std(smoothed)
-    UCL, LCL = mu + std_thresh * sigma, mu - std_thresh * sigma
-    outliers = (temps > UCL) | (temps < LCL)
+    lp = coeffs.copy()
+    lp[k:] = 0  # low-pass filter
+    smoothed = idct(lp, norm="ortho")
 
-    df_out = pd.DataFrame(
-        {
-            "time": df["time"],
-            "temperature": temps,
-            "smoothed": smoothed,
-            "UCL": UCL,
-            "LCL": LCL,
-            "outlier": outliers,
-        }
-    )
-    return df_out
+    # -------------------------
+    # 2. Compute SATV (high-pass)
+    # -------------------------
+    satv = temps - smoothed
+
+    # -------------------------
+    # 3. SPC bounds computed on SATV ONLY
+    # -------------------------
+    mu = np.mean(satv)
+    sigma = np.std(satv)
+    UCL = mu + std_thresh * sigma
+    LCL = mu - std_thresh * sigma
+
+    # -------------------------
+    # 4. Outlier locations (SATV exceeds limits)
+    # -------------------------
+    outliers = (satv > UCL) | (satv < LCL)
+
+    return pd.DataFrame({
+        "time": df["time"],
+        "temperature": temps,
+        "smoothed": smoothed,
+        "SATV": satv,
+        "UCL": UCL,
+        "LCL": LCL,
+        "outlier": outliers,
+    })
 
 
 # ------------------------------------------------------------
