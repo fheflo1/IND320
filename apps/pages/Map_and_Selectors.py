@@ -1,58 +1,74 @@
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
+import branca.colormap as cm
 import json
-from shapely.geometry import shape, Point
 import pandas as pd
+from shapely.geometry import shape, Point
+from pathlib import Path
+import sys
 
-st.set_page_config(page_title="Price Area Map", layout="wide")
+# ---------------------------------------------------------
+# Project imports
+# ---------------------------------------------------------
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+from src.db.mongo_elhub import load_production_silver, load_consumption_silver
+from src.ui.sidebar_controls import sidebar_controls
+
+
+# ---------------------------------------------------------
+# Page setup
+# ---------------------------------------------------------
+st.set_page_config(layout="wide")
 st.title("🔍 Price Areas – Interactive Map (Leaflet)")
 
 
+@st.cache_data(ttl=3600)
+def get_production():
+    return load_production_silver()
+
+@st.cache_data(ttl=3600)
+def get_consumption():
+    return load_consumption_silver()
+
 # ---------------------------------------------------------
-# Load GeoJSON for NO1–NO5
+# Load GeoJSON
 # ---------------------------------------------------------
 @st.cache_data
-def load_price_area_geojson():
+def load_geojson():
     with open("data/price_areas.geojson") as f:
         return json.load(f)
 
-geojson_data = load_price_area_geojson()
+geojson_data = load_geojson()
 
 
 # ---------------------------------------------------------
-# Build mapping from ID → Name
-# ---------------------------------------------------------
-@st.cache_data
-def build_id_to_name(gj):
-    out = {}
-    for feat in gj["features"]:
-        fid = feat.get("id") or feat["properties"].get("id")
-        name = feat["properties"].get("ElSpotOmr")
-        if fid and name:
-            out[fid] = name
-    return out
-
-id_to_name = build_id_to_name(geojson_data)
-
-
-# ---------------------------------------------------------
-# Build Shapely polygons for hit-testing
+# Build polygon index + centroid lookup
 # ---------------------------------------------------------
 @st.cache_data
-def build_polygons(gj):
+def build_polygon_index(gj):
     polys = []
-    for feat in gj["features"]:
-        fid = feat.get("id") or feat["properties"].get("id")
-        geom = shape(feat["geometry"])
-        polys.append((fid, geom))
-    return polys
+    centroids = {}
+    id2name = {}
 
-polygons = build_polygons(geojson_data)
+    for feat in gj["features"]:
+        fid = feat["properties"]["ElSpotOmr"]
+        geom = shape(feat["geometry"])
+
+        polys.append((fid, geom))
+        centroids[fid] = (geom.centroid.y, geom.centroid.x)  # lat, lon
+        id2name[fid] = fid
+
+    return polys, centroids, id2name
+
+
+polygons, centroids, id_to_name = build_polygon_index(geojson_data)
 
 
 def find_price_area(lon, lat):
-    """Return the polygon ID of the price area containing the point."""
     pt = Point(lon, lat)
     for fid, poly in polygons:
         if poly.contains(pt) or poly.touches(pt):
@@ -61,126 +77,211 @@ def find_price_area(lon, lat):
 
 
 # ---------------------------------------------------------
-# Session State Defaults
+# Session-state defaults (clean and consistent)
 # ---------------------------------------------------------
-# Initial map center (Norway midpoint)
-if "map_center" not in st.session_state:
-    st.session_state.map_center = [64.5, 11.0]
-
-if "map_zoom" not in st.session_state:
-    st.session_state.map_zoom = 5
-
-if "selected_point" not in st.session_state:
-    st.session_state.selected_point = None  # (lat, lon)
-
 if "selected_area" not in st.session_state:
     st.session_state.selected_area = None
+
+if "selected_fid" not in st.session_state:
+    st.session_state.selected_fid = None
+
+if "clicked_lat" not in st.session_state:
+    st.session_state.clicked_lat = None
+
+if "clicked_lon" not in st.session_state:
+    st.session_state.clicked_lon = None
+
+# Map viewport state
+if "center_lat" not in st.session_state:
+    st.session_state.center_lat = 65.0
+
+if "center_lon" not in st.session_state:
+    st.session_state.center_lon = 15.0
+
+if "zoom" not in st.session_state:
+    st.session_state.zoom = 5
+
+
+# ---------------------------------------------------------
+# Sidebar controls
+# ---------------------------------------------------------
+price_area_sidebar, city, lat_sel, lon_sel, year, month = sidebar_controls()
+
+# Manual selection override
+if price_area_sidebar != st.session_state.selected_area:
+    st.session_state.selected_area = price_area_sidebar
+    st.session_state.clicked_lat = None
+    st.session_state.clicked_lon = None
+
+    # Move map to centroid
+    if st.session_state.selected_area in centroids:
+        st.session_state.center_lat, st.session_state.center_lon = centroids[st.session_state.selected_area]
+
+
+# ---------------------------------------------------------
+# User choice controls for choropleth coloring
+# ---------------------------------------------------------
+data_type = st.sidebar.selectbox("Data Type", ["Production", "Consumption"])
+
+df_groups = get_production() if data_type == "Production" else get_consumption()
+all_groups = sorted(df_groups["group"].dropna().unique())
+
+group_choice = st.sidebar.selectbox("Select Group", all_groups)
+
+days_back = st.sidebar.slider("Time Interval (days)", 1, 365, 30)
+
+latest_time = df_groups["starttime"].max()
+cutoff = latest_time - pd.Timedelta(days=days_back)
+
+df_filtered = df_groups[(df_groups["group"] == group_choice) &
+                        (df_groups["starttime"] >= cutoff)]
+
+area_mean = (
+    df_filtered.groupby("pricearea")["quantitykwh"]
+    .mean()
+    .reset_index()
+    .rename(columns={"quantitykwh": "mean_kwh"})
+)
+
+mean_lookup = dict(zip(area_mean["pricearea"], area_mean["mean_kwh"]))
+
+colormap = cm.linear.YlOrRd_09.scale(
+    area_mean["mean_kwh"].min(),
+    area_mean["mean_kwh"].max()
+)
+
+
+def style_area(feature):
+    pa = feature["properties"]["ElSpotOmr"]
+    value = mean_lookup.get(pa)
+
+    if value is None:
+        return {"fillOpacity": 0, "color": "white", "weight": 1}
+
+    return {
+        "fillColor": colormap(value),
+        "fillOpacity": 0.5,
+        "color": "white",
+        "weight": 1
+    }
 
 
 # ---------------------------------------------------------
 # Build Leaflet Map
 # ---------------------------------------------------------
-map_col, info_col = st.columns([3, 1])
+m = folium.Map(
+    location=[st.session_state.center_lat, st.session_state.center_lon],
+    zoom_start=st.session_state.zoom,
+    tiles="CartoDB dark_matter",
+)
 
-with map_col:
-    m = folium.Map(
-        location=st.session_state.map_center,
-        zoom_start=st.session_state.map_zoom,
-        tiles="CartoDB dark_matter",
-        control_scale=True
-    )
+# Choropleth
+folium.GeoJson(
+    geojson_data,
+    name="Choropleth",
+    style_function=style_area,
+    highlight_function=lambda feat: {"weight": 0},
+    tooltip=folium.GeoJsonTooltip(
+        fields=["ElSpotOmr"],
+        aliases=["Price Area:"],
+        labels=True,
+    ),
+).add_to(m)
 
-    # Draw all price area polygons (transparent)
+# Selected area outline (red)
+if st.session_state.selected_fid:
+    selected_features = [
+        f for f in geojson_data["features"]
+        if f["properties"]["ElSpotOmr"] == st.session_state.selected_fid
+    ]
     folium.GeoJson(
-        geojson_data,
-        name="Price Areas",
+        {"type": "FeatureCollection", "features": selected_features},
         style_function=lambda f: {
-            "fillOpacity": 0.35,
-            "color": "white",
-            "weight": 1,
-        },
-        highlight_function=lambda f: {
+            "fillColor": "#00000000",
+            "color": "red",
             "weight": 3,
-            "color": "yellow",
-            "fillOpacity": 0.5,
         },
+        highlight_function=lambda x: {"weight": 0},
     ).add_to(m)
 
-    # Highlight selected area
-    if st.session_state.selected_area:
-        selected_features = [
-            f for f in geojson_data["features"]
-            if f.get("id") == st.session_state.selected_area
-            or f["properties"].get("id") == st.session_state.selected_area
-        ]
+# Click marker
+if st.session_state.clicked_lat is not None:
+    folium.Marker(
+        location=[st.session_state.clicked_lat, st.session_state.clicked_lon],
+        icon=folium.Icon(color="red"),
+    ).add_to(m)
 
-        if selected_features:
-            folium.GeoJson(
-                {"type": "FeatureCollection", "features": selected_features},
-                name="Selected Area",
-                style_function=lambda f: {
-                    "fillOpacity": 0.15,
-                    "color": "red",
-                    "weight": 4,
-                }
-            ).add_to(m)
 
-    # Add selected point marker
-    if st.session_state.selected_point:
-        lat, lon = st.session_state.selected_point
-        folium.Marker(
-            location=[lat, lon],
-            icon=folium.Icon(color="red"),
-            tooltip="Selected Point",
-        ).add_to(m)
+# ---------------------------------------------------------
+# Render map
+# ---------------------------------------------------------
+map_out = st_folium(
+    m, height=900, width="100%",
+    key="leaflet_map",
+    returned_objects=["last_clicked", "zoom", "center"],
+)
 
-    # Render map
-    map_state = st_folium(
-        m,
-        height=900,
-        width="100%",
-        returned_objects=["last_clicked", "zoom", "center"]
+
+# ---------------------------------------------------------
+# Update states
+# ---------------------------------------------------------
+clicked = map_out.get("last_clicked")
+if clicked:
+    st.session_state.clicked_lat = clicked["lat"]
+    st.session_state.clicked_lon = clicked["lng"]
+
+    st.session_state.selected_fid = find_price_area(
+        clicked["lng"], clicked["lat"]
     )
 
+if map_out.get("zoom"):
+    st.session_state.zoom = map_out["zoom"]
 
-# ---------------------------------------------------------
-# Process map interaction (click, zoom, pan)
-# ---------------------------------------------------------
-# Update zoom / center so map stays the same after rerun
-if map_state:
-    if map_state.get("zoom"):
-        st.session_state.map_zoom = map_state["zoom"]
-    if map_state.get("center"):
-        st.session_state.map_center = [
-            map_state["center"]["lat"], map_state["center"]["lng"]
-        ]
-
-    # Handle click
-    if map_state.get("last_clicked"):
-        lat = map_state["last_clicked"]["lat"]
-        lon = map_state["last_clicked"]["lng"]
-
-        st.session_state.selected_point = (lat, lon)
-        st.session_state.selected_area = find_price_area(lon, lat)
-
-        st.rerun()
+if map_out.get("center"):
+    st.session_state.center_lat = map_out["center"]["lat"]
+    st.session_state.center_lon = map_out["center"]["lng"]
 
 
 # ---------------------------------------------------------
-# Right panel: Selection Info
+# Sidebar Info
 # ---------------------------------------------------------
-with info_col:
+with st.sidebar:
     st.subheader("Selection Info")
 
-    if st.session_state.selected_point:
-        lat, lon = st.session_state.selected_point
-        st.write(f"📍 **Lat:** {lat:.6f}")
-        st.write(f"📍 **Lon:** {lon:.6f}")
-    else:
-        st.write("➡ Click the map to select a point.")
+    st.write(f"📍 Lat: {st.session_state.clicked_lat or '-'}")
+    st.write(f"📍 Lon: {st.session_state.clicked_lon or '-'}")
 
     if st.session_state.selected_area:
-        area_name = id_to_name.get(st.session_state.selected_area, "Unknown")
-        st.success(f"🗺️ Price Area: **{area_name}**")
+        st.success(f"Price Area: **{st.session_state.selected_area}**")
     else:
-        st.error("❌ Outside known price areas")
+        st.error("No price area selected")
+
+
+# ---------------------------------------------------------
+# Load & show energy data
+# ---------------------------------------------------------
+st.subheader("Energy Data for Selected Price Area")
+
+if not st.session_state.selected_area:
+    st.info("Select a price area")
+else:
+    pa = st.session_state.selected_area
+
+    df_prod = get_production()
+    df_con = get_consumption()
+
+    df_prod_sel = df_prod[
+        (df_prod["pricearea"] == pa) &
+        (df_prod["group"] == group_choice)
+    ]
+
+    df_con_sel = df_con[
+        (df_con["pricearea"] == pa) &
+        (df_con["group"] == group_choice)
+    ]
+
+    st.write("### Production")
+    st.dataframe(df_prod_sel, use_container_width=True)
+
+    st.write("### Consumption")
+    st.dataframe(df_con_sel, use_container_width=True)
