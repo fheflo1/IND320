@@ -1,6 +1,19 @@
 import streamlit as st
+from pathlib import Path
+import sys
+
+# --- Project imports setup ---
+project_root = Path(__file__).resolve().parents[1]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+from src.app_state import init_app_state
 
 st.set_page_config(page_title="IND320 Dashboard", layout="wide")
+
+# Initialize app state once with loading indicator
+with st.spinner("Loading data..."):
+    init_app_state()
 
 st.title("IND320 — Data to Decisions Dashboard")
 st.markdown("<div style='height: 25px'></div>", unsafe_allow_html=True)
@@ -100,10 +113,10 @@ with col3:
         st.switch_page("pages/03_Production_STL_and_Spectrogram.py")
 with col4:
     if st.button(
-        "🌤️ **Weather Data and Line Charts**\n\n Detailed weather observations",
-        key="weather_data",
+        "🌤️ **Weather Overview**\n\n Data tables and interactive visualizations",
+        key="weather_overview",
     ):
-        st.switch_page("pages/04_Weather_Data_and_Line_Charts.py")
+        st.switch_page("pages/04_Weather_Overview.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 
@@ -111,15 +124,11 @@ st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 col5, col6 = st.columns(2, gap="large")
 with col5:
     if st.button(
-        "📊 **Weather Plots**\n\n Interactive visualizations of meteorological data",
-        key="weather_plots",
-    ):
-        st.switch_page("pages/05_Weather_Plots.py")
-with col6:
-    if st.button(
         "🧭 **Meteo Analyses**\n\n Outlier and anomaly detection (SPC & LOF)",
         key="meteo_analyses",
     ):
-        st.switch_page("pages/06_Meteo_Analyses.py")
+        st.switch_page("pages/05_Meteo_Analyses.py")
+with col6:
+    st.empty()  # Placeholder for future functionality
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)

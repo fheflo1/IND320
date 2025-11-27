@@ -1,29 +1,21 @@
 import streamlit as st
+from src.app_state import PRICE_AREA_COORDS, AVAILABLE_YEARS, AVAILABLE_MONTHS
 
 
 def sidebar_controls():
     """Shared sidebar that persists across pages within the same session."""
     st.sidebar.header("Select Location and Period")
 
-    PRICE_AREA_COORDS = {
-        "NO1": ("Oslo", 59.91, 10.75),
-        "NO2": ("Kristiansand", 58.15, 8.00),
-        "NO3": ("Trondheim", 63.43, 10.39),
-        "NO4": ("Tromsø", 69.65, 18.96),
-        "NO5": ("Bergen", 60.39, 5.32),
-    }
-
-    years = [2018, 2019, 2020, 2021, 2022, 2023, 2024]
-    months = ["ALL"] + [f"{i:02d}" for i in range(1, 13)]
-
-    # --- Step 1: Prepopulate Streamlit session_state if empty ---
-    # (Only the first time in an app session)
-    if not all(k in st.session_state for k in ["price_area", "year", "month_sel"]):
+    # Session state should already be initialized by init_app_state() in app.py
+    # This is a fallback for safety
+    if "price_area" not in st.session_state:
         st.session_state["price_area"] = "NO1"
+    if "year" not in st.session_state:
         st.session_state["year"] = 2021
+    if "month_sel" not in st.session_state:
         st.session_state["month_sel"] = "01"
 
-    # --- Step 2: Widgets use the current state values ---
+    # Widgets use the current state values
     price_area = st.sidebar.selectbox(
         "Select Price Area",
         options=list(PRICE_AREA_COORDS.keys()),
@@ -34,18 +26,17 @@ def sidebar_controls():
 
     year = st.sidebar.selectbox(
         "Select Year",
-        options=years,
-        index=years.index(st.session_state["year"]),
+        options=AVAILABLE_YEARS,
+        index=AVAILABLE_YEARS.index(st.session_state["year"]),
         key="year",
     )
 
     month = st.sidebar.selectbox(
         "Select Month",
-        options=months,
-        index=months.index(st.session_state["month_sel"]),
+        options=AVAILABLE_MONTHS,
+        index=AVAILABLE_MONTHS.index(st.session_state["month_sel"]),
         key="month_sel",
         format_func=lambda x: "All months" if x == "ALL" else x,
     )
 
-    # --- Step 3: Return consistent values ---
     return price_area, city, lat, lon, year, month

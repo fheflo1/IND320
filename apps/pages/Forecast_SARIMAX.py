@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import statsmodels.api as sm
 import numpy as np
-from datetime import datetime
 from pathlib import Path
 import sys
 
@@ -21,19 +20,7 @@ from src.forecast.sarimax_utils import (
     fit_sarimax,
     run_forecast,
 )
-
-
-# ---------------------------------------------------------
-# City → coordinate mapping
-# (fallback if dataset doesn't contain pricearea)
-# ---------------------------------------------------------
-PRICEAREA_COORDS = {
-    "NO1": ("Oslo", 59.91, 10.75),
-    "NO2": ("Kristiansand", 58.15, 8.00),
-    "NO3": ("Trondheim", 63.43, 10.39),
-    "NO4": ("Tromsø", 69.65, 18.96),
-    "NO5": ("Bergen", 60.39, 5.32),
-}
+from src.app_state import PRICE_AREA_COORDS
 
 
 # ---------------------------------------------------------
@@ -196,7 +183,7 @@ if st.button("Run Forecast"):
     # ---------------------------------------------------------
     if weather_selected:
         area = df["pricearea"].iloc[0] if "pricearea" in df.columns else "NO1"
-        city, lat, lon = PRICEAREA_COORDS.get(area, PRICEAREA_COORDS["NO1"])
+        city, lat, lon = PRICE_AREA_COORDS.get(area, PRICE_AREA_COORDS["NO1"])
 
         st.info(f"Fetching ERA5 weather for {city} ({lat}, {lon})…")
 

@@ -14,26 +14,7 @@ if str(project_root) not in sys.path:
 
 from src.api.meteo_api import fetch_meteo_data
 from src.db.mongo_elhub import load_production_silver, load_consumption_silver
-
-
-# ---------------------------------------------------------
-# PRICEAREA → coordinates
-# ---------------------------------------------------------
-PRICEAREA_COORDS = {
-    "NO1": (59.9139, 10.7522),
-    "NO2": (58.1467, 7.9956),
-    "NO3": (63.4305, 10.3951),
-    "NO4": (69.6492, 18.9553),
-    "NO5": (60.39299, 5.32415),
-}
-
-PRICEAREA_CITY = {
-    "NO1": "Oslo",
-    "NO2": "Kristiansand",
-    "NO3": "Trondheim",
-    "NO4": "Tromsø",
-    "NO5": "Bergen",
-}
+from src.app_state import PRICE_AREA_COORDS
 
 
 # ---------------------------------------------------------
@@ -142,10 +123,9 @@ window = st.sidebar.slider("Rolling window (hours):", 6, 240, 48)
 # ---------------------------------------------------------
 # FETCH METEO
 # ---------------------------------------------------------
-city = PRICEAREA_CITY.get(pricearea_choice, "Unknown City")
+city, lat, lon = PRICE_AREA_COORDS.get(pricearea_choice, PRICE_AREA_COORDS["NO1"])
 st.info(f"Using METEO data for {pricearea_choice} ({city})")
 
-lat, lon = PRICEAREA_COORDS[pricearea_choice]
 df_m = get_meteo(lat, lon, start_date, end_date)
 df_m = df_m.set_index("time").sort_index()
 df_m = df_m.apply(pd.to_numeric, errors="coerce").resample("1H").mean().ffill()
