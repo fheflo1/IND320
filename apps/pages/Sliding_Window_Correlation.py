@@ -41,7 +41,8 @@ PRICEAREA_CITY = {
 # ---------------------------------------------------------
 st.title("Sliding Window Correlation — Meteorology vs Energy")
 
-st.write("""
+st.write(
+    """
 This tool computes a **sliding window correlation** between hourly meteorology and 
 hourly energy (production or consumption).
 
@@ -50,7 +51,8 @@ Features:
 - Three stacked visualizations  
 - Lag adjustment  
 - Full caching & error handling  
-""")
+"""
+)
 
 
 # ---------------------------------------------------------
@@ -58,15 +60,27 @@ Features:
 # ---------------------------------------------------------
 @st.cache_data(ttl=1800)
 def load_energy_cached(energy_type):
-    return load_production_silver() if energy_type == "Production" else load_consumption_silver()
+    return (
+        load_production_silver()
+        if energy_type == "Production"
+        else load_consumption_silver()
+    )
 
 
 @st.cache_data(ttl=1800)
 def get_meteo(lat, lon, start, end):
     df = fetch_meteo_data(
-        lat, lon, start, end,
-        ["temperature_2m","precipitation","windspeed_10m",
-         "windgusts_10m","winddirection_10m"]
+        lat,
+        lon,
+        start,
+        end,
+        [
+            "temperature_2m",
+            "precipitation",
+            "windspeed_10m",
+            "windgusts_10m",
+            "winddirection_10m",
+        ],
     )
     df = df.reset_index().rename(columns={"index": "time"})
     df["time"] = pd.to_datetime(df["time"]).dt.tz_localize(None)
@@ -78,7 +92,7 @@ def compute_corr_array(matrix, window):
     """Compute sliding window correlation efficiently."""
     corr = np.full(len(matrix), np.nan)
     for i in range(window, len(matrix)):
-        sub = matrix[i-window:i]
+        sub = matrix[i - window : i]
         dfw = pd.DataFrame(sub, columns=["m", "e"]).dropna()
         if len(dfw) >= 3 and dfw["m"].std() > 0 and dfw["e"].std() > 0:
             corr[i] = dfw["m"].corr(dfw["e"])
@@ -110,11 +124,14 @@ start_year, end_year = st.sidebar.select_slider(
 )
 
 start_date = f"{start_year}-01-01"
-end_date   = f"{end_year}-12-31"
+end_date = f"{end_year}-12-31"
 
 meteo_vars = [
-    "temperature_2m", "precipitation", "windspeed_10m",
-    "windgusts_10m", "winddirection_10m"
+    "temperature_2m",
+    "precipitation",
+    "windspeed_10m",
+    "windgusts_10m",
+    "winddirection_10m",
 ]
 meteo_choice = st.sidebar.selectbox("Meteorological variable:", meteo_vars)
 
@@ -155,10 +172,14 @@ df_e = df_e[~df_e.index.duplicated()]
 # ---------------------------------------------------------
 # ALIGN METEO → ENERGY
 # ---------------------------------------------------------
-df = pd.DataFrame({
-    "meteo": df_m[meteo_choice].reindex(df_e.index, method="nearest", tolerance="1H"),
-    "energy": df_e
-}).dropna()
+df = pd.DataFrame(
+    {
+        "meteo": df_m[meteo_choice].reindex(
+            df_e.index, method="nearest", tolerance="1H"
+        ),
+        "energy": df_e,
+    }
+).dropna()
 
 if df.empty:
     st.error("No overlapping METEO and ENERGY timestamps were found.")
@@ -206,7 +227,7 @@ center = st.slider(
 )
 
 window_start = max(0, center - window)
-window_end   = center
+window_end = center
 
 
 st.write(f"Window range: **{window_start} → {window_end}** ({window} hours)")
@@ -216,15 +237,20 @@ st.write(f"Window range: **{window_start} → {window_end}** ({window} hours)")
 # PLOT 1 — METEO
 # ---------------------------------------------------------
 fig1 = go.Figure()
-fig1.add_trace(go.Scatter(x=df.index, y=df["meteo"], mode="lines",
-                          line=dict(color="royalblue", width=1)))
+fig1.add_trace(
+    go.Scatter(
+        x=df.index, y=df["meteo"], mode="lines", line=dict(color="royalblue", width=1)
+    )
+)
 
-fig1.add_trace(go.Scatter(
-    x=df.index[window_start:window_end],
-    y=df["meteo"].iloc[window_start:window_end],
-    mode="lines",
-    line=dict(color="red", width=3),
-))
+fig1.add_trace(
+    go.Scatter(
+        x=df.index[window_start:window_end],
+        y=df["meteo"].iloc[window_start:window_end],
+        mode="lines",
+        line=dict(color="red", width=3),
+    )
+)
 
 fig1.update_layout(title=f"Meteo: {meteo_choice}", height=350, showlegend=False)
 
@@ -233,32 +259,41 @@ fig1.update_layout(title=f"Meteo: {meteo_choice}", height=350, showlegend=False)
 # PLOT 2 — ENERGY
 # ---------------------------------------------------------
 fig2 = go.Figure()
-fig2.add_trace(go.Scatter(x=df.index, y=df["energy"], mode="lines",
-                          line=dict(color="royalblue", width=1)))
+fig2.add_trace(
+    go.Scatter(
+        x=df.index, y=df["energy"], mode="lines", line=dict(color="royalblue", width=1)
+    )
+)
 
-fig2.add_trace(go.Scatter(
-    x=df.index[window_start:window_end],
-    y=df["energy"].iloc[window_start:window_end],
-    mode="lines",
-    line=dict(color="red", width=3),
-))
+fig2.add_trace(
+    go.Scatter(
+        x=df.index[window_start:window_end],
+        y=df["energy"].iloc[window_start:window_end],
+        mode="lines",
+        line=dict(color="red", width=3),
+    )
+)
 
-fig2.update_layout(title=f"Energy: {group_choice} ({energy_type})", height=350, showlegend=False)
+fig2.update_layout(
+    title=f"Energy: {group_choice} ({energy_type})", height=350, showlegend=False
+)
 
 
 # ---------------------------------------------------------
 # PLOT 3 — CORRELATION
 # ---------------------------------------------------------
 fig3 = go.Figure()
-fig3.add_trace(go.Scatter(x=df.index, y=df["corr"], mode="lines",
-                          line=dict(color="blue", width=1)))
+fig3.add_trace(
+    go.Scatter(x=df.index, y=df["corr"], mode="lines", line=dict(color="blue", width=1))
+)
 
 center_ts = df.index[center]
 
 # vertical marker
 fig3.add_shape(
     type="line",
-    x0=center_ts, x1=center_ts,
+    x0=center_ts,
+    x1=center_ts,
     y0=float(np.nanmin(df["corr"])),
     y1=float(np.nanmax(df["corr"])),
     line=dict(color="red", width=2),
@@ -267,7 +302,7 @@ fig3.add_shape(
 fig3.update_layout(
     title=f"Sliding Window Correlation (Window={window}h, Lag={lag}h)",
     height=350,
-    showlegend=False
+    showlegend=False,
 )
 
 
@@ -280,4 +315,3 @@ st.plotly_chart(fig3, use_container_width=True)
 
 st.subheader("Raw Correlation Values")
 st.dataframe(df[["corr"]].dropna())
-

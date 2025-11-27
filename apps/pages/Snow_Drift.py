@@ -13,21 +13,20 @@ import sys
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
-from src.api.meteo_api import fetch_meteo_data   # your API wrapper
+from src.api.meteo_api import fetch_meteo_data  # your API wrapper
 
 
 # --- Helper: compute SWE from hourly data ---
 def compute_SWE(df):
     """Snow Water Equivalent: precipitation when T < 1°C."""
     return df.apply(
-        lambda row: row["precipitation"] if row["temperature_2m"] < 1 else 0,
-        axis=1
+        lambda row: row["precipitation"] if row["temperature_2m"] < 1 else 0, axis=1
     )
 
 
 # --- Tabler functions ---
 def compute_Qupot(ws, dt=3600):
-    return np.sum((ws ** 3.8) * dt) / 233_847
+    return np.sum((ws**3.8) * dt) / 233_847
 
 
 def compute_sector_index(direction):
@@ -75,9 +74,7 @@ st.success(f"Using coordinates: **{lat:.4f}, {lon:.4f}**")
 # --- User selects year range ---
 years = list(range(1980, datetime.now().year))
 start_year, end_year = st.select_slider(
-    "Select Snow-Year Range",
-    options=years,
-    value=(2010, 2015)
+    "Select Snow-Year Range", options=years, value=(2010, 2015)
 )
 
 # Snow-year = July 1 start_year → June 30 end_year
@@ -85,6 +82,7 @@ start_date = f"{start_year}-07-01"
 end_date = f"{end_year+1}-06-30"
 
 st.info(f"Fetching ERA5 data for {start_date} → {end_date}")
+
 
 # --- Fetch data ---
 @st.cache_data(ttl=3600, show_spinner="Fetching weather data from Open-Meteo...")
@@ -109,6 +107,7 @@ def get_meteo_data(lat, lon, start, end):
 
     return df
 
+
 df = get_meteo_data(lat, lon, start_date, end_date)
 
 df["SWE"] = compute_SWE(df)
@@ -132,9 +131,13 @@ st.subheader("📊 Annual Snow Drift")
 st.dataframe(yearly)
 
 # --- Plot Snow Drift ---
-fig = px.bar(yearly, x="season", y="Qt_kgm",
-             title="Annual Snow Drift (kg/m)",
-             labels={"Qt_kgm": "Snow Drift (kg/m)"})
+fig = px.bar(
+    yearly,
+    x="season",
+    y="Qt_kgm",
+    title="Annual Snow Drift (kg/m)",
+    labels={"Qt_kgm": "Snow Drift (kg/m)"},
+)
 st.plotly_chart(fig, use_container_width=True)
 
 # --- Compute wind rose ---
@@ -146,8 +149,24 @@ for season, g in df.groupby("season"):
 
 avg_sectors /= len(df["season"].unique())
 
-directions = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
-              'S','SSW','SW','WSW','W','WNW','NW','NNW']
+directions = [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW",
+]
 
 rose = go.Figure(
     go.Barpolar(
@@ -165,7 +184,7 @@ rose.update_layout(
 
 rose.update_layout(
     title="Wind Rose – Snow Drift Contribution",
-    polar=dict(angularaxis=dict(direction="clockwise"))
+    polar=dict(angularaxis=dict(direction="clockwise")),
 )
 
 st.plotly_chart(rose, use_container_width=True)

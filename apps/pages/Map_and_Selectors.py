@@ -30,9 +30,11 @@ st.title("Price Areas – Interactive Map (Leaflet)")
 def get_production():
     return load_production_silver()
 
+
 @st.cache_data(ttl=3600)
 def get_consumption():
     return load_consumption_silver()
+
 
 # ---------------------------------------------------------
 # Load GeoJSON
@@ -41,6 +43,7 @@ def get_consumption():
 def load_geojson():
     with open("data/price_areas.geojson") as f:
         return json.load(f)
+
 
 geojson_data = load_geojson()
 
@@ -115,7 +118,9 @@ if price_area_sidebar != st.session_state.selected_area:
 
     # Move map to centroid
     if st.session_state.selected_area in centroids:
-        st.session_state.center_lat, st.session_state.center_lon = centroids[st.session_state.selected_area]
+        st.session_state.center_lat, st.session_state.center_lon = centroids[
+            st.session_state.selected_area
+        ]
 
 
 # ---------------------------------------------------------
@@ -133,8 +138,9 @@ days_back = st.sidebar.slider("Time Interval (days)", 1, 365, 30)
 latest_time = df_groups["starttime"].max()
 cutoff = latest_time - pd.Timedelta(days=days_back)
 
-df_filtered = df_groups[(df_groups["group"] == group_choice) &
-                        (df_groups["starttime"] >= cutoff)]
+df_filtered = df_groups[
+    (df_groups["group"] == group_choice) & (df_groups["starttime"] >= cutoff)
+]
 
 area_mean = (
     df_filtered.groupby("pricearea")["quantitykwh"]
@@ -146,8 +152,7 @@ area_mean = (
 mean_lookup = dict(zip(area_mean["pricearea"], area_mean["mean_kwh"]))
 
 colormap = cm.linear.YlOrRd_09.scale(
-    area_mean["mean_kwh"].min(),
-    area_mean["mean_kwh"].max()
+    area_mean["mean_kwh"].min(), area_mean["mean_kwh"].max()
 )
 
 
@@ -162,7 +167,7 @@ def style_area(feature):
         "fillColor": colormap(value),
         "fillOpacity": 0.5,
         "color": "white",
-        "weight": 1
+        "weight": 1,
     }
 
 
@@ -191,7 +196,8 @@ folium.GeoJson(
 # Selected area outline (red)
 if st.session_state.selected_fid:
     selected_features = [
-        f for f in geojson_data["features"]
+        f
+        for f in geojson_data["features"]
         if f["properties"]["ElSpotOmr"] == st.session_state.selected_fid
     ]
     folium.GeoJson(
@@ -216,7 +222,9 @@ if st.session_state.clicked_lat is not None:
 # Render map
 # ---------------------------------------------------------
 map_out = st_folium(
-    m, height=900, width="100%",
+    m,
+    height=900,
+    width="100%",
     key="leaflet_map",
     returned_objects=["last_clicked", "zoom", "center"],
 )
@@ -230,9 +238,7 @@ if clicked:
     st.session_state.clicked_lat = clicked["lat"]
     st.session_state.clicked_lon = clicked["lng"]
 
-    st.session_state.selected_fid = find_price_area(
-        clicked["lng"], clicked["lat"]
-    )
+    st.session_state.selected_fid = find_price_area(clicked["lng"], clicked["lat"])
 
 if map_out.get("zoom"):
     st.session_state.zoom = map_out["zoom"]
@@ -271,14 +277,10 @@ else:
     df_con = get_consumption()
 
     df_prod_sel = df_prod[
-        (df_prod["pricearea"] == pa) &
-        (df_prod["group"] == group_choice)
+        (df_prod["pricearea"] == pa) & (df_prod["group"] == group_choice)
     ]
 
-    df_con_sel = df_con[
-        (df_con["pricearea"] == pa) &
-        (df_con["group"] == group_choice)
-    ]
+    df_con_sel = df_con[(df_con["pricearea"] == pa) & (df_con["group"] == group_choice)]
 
     st.write("### Production")
     st.dataframe(df_prod_sel, use_container_width=True)

@@ -28,11 +28,11 @@ from src.forecast.sarimax_utils import (
 # (fallback if dataset doesn't contain pricearea)
 # ---------------------------------------------------------
 PRICEAREA_COORDS = {
-    "NO1": ("Oslo",       59.91, 10.75),
+    "NO1": ("Oslo", 59.91, 10.75),
     "NO2": ("Kristiansand", 58.15, 8.00),
-    "NO3": ("Trondheim",  63.43, 10.39),
-    "NO4": ("Tromsø",     69.65, 18.96),
-    "NO5": ("Bergen",     60.39, 5.32),
+    "NO3": ("Trondheim", 63.43, 10.39),
+    "NO4": ("Tromsø", 69.65, 18.96),
+    "NO5": ("Bergen", 60.39, 5.32),
 }
 
 
@@ -60,14 +60,14 @@ st.title("SARIMAX Energy Forecasting")
 # ---------------------------------------------------------
 # Dataset selection
 # ---------------------------------------------------------
-data_source = st.radio(
-    "Select dataset",
-    ["Production", "Consumption"],
-    horizontal=True
-)
+data_source = st.radio("Select dataset", ["Production", "Consumption"], horizontal=True)
 
 with st.spinner("Loading energy data…"):
-    df = load_production_silver() if data_source == "Production" else load_consumption_silver()
+    df = (
+        load_production_silver()
+        if data_source == "Production"
+        else load_consumption_silver()
+    )
 
 
 # ---------------------------------------------------------
@@ -91,13 +91,13 @@ df = df.set_index(time_col).sort_index()
 # Clean duplicates + resample hourly
 # ---------------------------------------------------------
 numeric_df = df.select_dtypes(include="number")
-other_df   = df.select_dtypes(exclude="number")
+other_df = df.select_dtypes(exclude="number")
 
 numeric_df = numeric_df.groupby(numeric_df.index).sum()
-other_df   = other_df.groupby(other_df.index).first()
+other_df = other_df.groupby(other_df.index).first()
 
 numeric_df = numeric_df.resample("h").mean().interpolate()
-other_df   = other_df.resample("h").ffill()
+other_df = other_df.resample("h").ffill()
 
 df = pd.concat([numeric_df, other_df], axis=1)
 
@@ -159,9 +159,9 @@ max_date = df.index.max().date()
 
 col1, col2 = st.columns(2)
 start_date = col1.date_input("Training start", min_date)
-end_date   = col2.date_input("Training end", max_date)
+end_date = col2.date_input("Training end", max_date)
 
-forecast_horizon = st.number_input("Forecast horizon (hours)", 24, 24*14, 168)
+forecast_horizon = st.number_input("Forecast horizon (hours)", 24, 24 * 14, 168)
 
 
 # ---------------------------------------------------------
@@ -169,14 +169,14 @@ forecast_horizon = st.number_input("Forecast horizon (hours)", 24, 24*14, 168)
 # ---------------------------------------------------------
 st.subheader("SARIMAX Parameters")
 
-p  = st.number_input("p (AR)", 0, 12, 1)
-d  = st.number_input("d (Diff)", 0, 2, 0)
-q  = st.number_input("q (MA)", 0, 12, 1)
+p = st.number_input("p (AR)", 0, 12, 1)
+d = st.number_input("d (Diff)", 0, 2, 0)
+q = st.number_input("q (MA)", 0, 12, 1)
 
 sp = st.number_input("P (Seasonal AR)", 0, 12, 1)
 sd = st.number_input("D (Seasonal Diff)", 0, 2, 1)
 sq = st.number_input("Q (Seasonal MA)", 0, 12, 1)
-m  = st.number_input("m (Season length)", 1, 400, 24)
+m = st.number_input("m (Season length)", 1, 400, 24)
 
 order = (p, d, q)
 seasonal_order = (sp, sd, sq, m)
@@ -201,10 +201,7 @@ if st.button("Run Forecast"):
         st.info(f"Fetching ERA5 weather for {city} ({lat}, {lon})…")
 
         weather_df = load_era5_weather(
-            lat, lon,
-            str(start_date),
-            str(end_date),
-            weather_selected
+            lat, lon, str(start_date), str(end_date), weather_selected
         )
 
         weather_df.index = weather_df.index.tz_convert(None)
@@ -224,14 +221,18 @@ if st.button("Run Forecast"):
 
     # Build future exogenous inputs
     if exog_cols:
-        future_index = pd.date_range(start=end_date, periods=forecast_horizon+1, freq="h")[1:]
+        future_index = pd.date_range(
+            start=end_date, periods=forecast_horizon + 1, freq="h"
+        )[1:]
         last_vals = df[exog_cols].iloc[-1]
         X_future = pd.DataFrame([last_vals] * forecast_horizon, index=future_index)
     else:
         X_future = None
 
     model_params = (model, order, seasonal_order, y, X)
-    forecast, lower, upper = run_forecast(model_params, steps=forecast_horizon, X_future=X_future)
+    forecast, lower, upper = run_forecast(
+        model_params, steps=forecast_horizon, X_future=X_future
+    )
 
     # ---------------------------------------------------------
     # PLOT
@@ -242,25 +243,29 @@ if st.button("Run Forecast"):
 
     # One-step ahead
     insample = model.get_prediction(start=y.index[0], end=y.index[-1], dynamic=False)
-    fig.add_trace(go.Scatter(
-        x=insample.predicted_mean.index,
-        y=insample.predicted_mean,
-        name="One-step ahead",
-        line=dict(dash="dash")
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=insample.predicted_mean.index,
+            y=insample.predicted_mean,
+            name="One-step ahead",
+            line=dict(dash="dash"),
+        )
+    )
 
     # Dynamic forecast
     fig.add_trace(go.Scatter(x=forecast.index, y=forecast, name="Forecast"))
 
     # Confidence interval
-    fig.add_trace(go.Scatter(
-        x=forecast.index.tolist() + forecast.index[::-1].tolist(),
-        y=upper.tolist() + lower[::-1].tolist(),
-        fill="toself",
-        fillcolor="rgba(0,150,255,0.2)",
-        line=dict(color="rgba(255,255,255,0)"),
-        name="Confidence interval"
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=forecast.index.tolist() + forecast.index[::-1].tolist(),
+            y=upper.tolist() + lower[::-1].tolist(),
+            fill="toself",
+            fillcolor="rgba(0,150,255,0.2)",
+            line=dict(color="rgba(255,255,255,0)"),
+            name="Confidence interval",
+        )
+    )
 
     fig.update_layout(height=500, title="SARIMAX Forecast")
     st.plotly_chart(fig, use_container_width=True)
