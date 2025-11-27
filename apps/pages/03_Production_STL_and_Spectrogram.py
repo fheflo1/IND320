@@ -16,7 +16,7 @@ from src.analysis.plots import plot_stl_decomposition, plot_spectrogram
 price_area, city, lat, lon, year, month = sidebar_controls()
 
 # --- Page title ---
-st.title("🎯 Production Analyses (Elhub)")
+st.title("Production Analyses (Elhub)")
 st.caption("Analyze production data by STL decomposition and frequency spectrum.")
 
 
@@ -55,7 +55,7 @@ ordered_groups = [g for g in CATEGORY_ORDER["productiongroup"] if g in groups] +
 ]
 
 # --- Tabs for analyses ---
-tab1, tab2 = st.tabs(["📈 STL Analysis", "🎧 Spectrogram"])
+tab1, tab2 = st.tabs(["STL Analysis", "Spectrogram"])
 
 # -------------------------------------------------------------------
 # TAB 1: STL ANALYSIS

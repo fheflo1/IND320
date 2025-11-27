@@ -15,3 +15,6 @@ openmeteo-requests
 requests-cache
 retry-requests
 seaborn
+folium
+streamlit_folium
+shapely

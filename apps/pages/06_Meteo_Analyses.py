@@ -17,7 +17,7 @@ from src.ui.sidebar_controls import sidebar_controls
 from src.api.meteo_api import fetch_meteo_data
 
 
-st.title("🌡️ Meteo Analyses (Open-Meteo)")
+st.title("Meteo Analyses (Open-Meteo)")
 
 price_area, city, lat, lon, year, month = sidebar_controls()
 

@@ -18,7 +18,7 @@ from src.api.meteo_api import fetch_meteo_data
 # --- Shared sidebar ---
 price_area, city, lat, lon, year, month = sidebar_controls()
 
-st.title("🏠 Home — Data Overview")
+st.title("Home — Data Overview")
 st.info("Use the sidebar to explore weather and energy data across different analyses.")
 
 

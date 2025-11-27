@@ -245,7 +245,7 @@ def plot_stl_decomposition(df, seasonal=30, trend=90):
     ts = (
         df.groupby("starttime", as_index=True)["quantitykwh"]
         .sum()
-        .asfreq("H")
+        .asfreq("h")
         .interpolate()
     )
 
@@ -337,7 +337,7 @@ def plot_spectrogram(df, window=168, overlap=50):
     ts = (
         df.groupby("starttime", as_index=True)["quantitykwh"]
         .sum()
-        .asfreq("H")
+        .asfreq("h")
         .interpolate()
     )
     nperseg = window

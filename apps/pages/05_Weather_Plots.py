@@ -25,7 +25,7 @@ PRICE_AREA_COORDS = {
 }
 
 # --- Page title ---
-st.title("🌦️ Weather Plots")
+st.title("Weather Plots")
 
 start_date = f"{year}-01-01"
 end_date = f"{year}-12-31"
@@ -118,6 +118,6 @@ st.plotly_chart(fig, use_container_width=True)
 
 # --- Footer ---
 st.caption(
-    "💡 **Tip:** Select *Normalize* to compare variable shapes on a single scale. "
+    "**Tip:** Select *Normalize* to compare variable shapes on a single scale. "
     "In *Auto-axes*, temperature, wind, precipitation, and wind direction each get their own axes."
 )
