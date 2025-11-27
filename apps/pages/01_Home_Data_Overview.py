@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import re
 from pathlib import Path
-from pymongo import MongoClient
 import sys
 from calendar import month_name
 
@@ -12,7 +11,7 @@ if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
 from src.ui.sidebar_controls import sidebar_controls
-from src.api.meteo_api import fetch_meteo_data
+from src.app_state import get_weather, PRICEAREAS
 
 
 # --- Shared sidebar ---
@@ -29,50 +28,6 @@ _unit_re = re.compile(r"\(([^)]+)\)")
 
 
 # ----------------------------------------------------------
-# Cached loaders
-# ----------------------------------------------------------
-@st.cache_data(ttl=3600, show_spinner="Fetching Open-Meteo data...")
-def get_meteo_data(lat, lon, start, end):
-    """Fetch Open-Meteo data for selected period."""
-    df = fetch_meteo_data(
-        lat,
-        lon,
-        start,
-        end,
-        [
-            "temperature_2m",
-            "precipitation",
-            "windspeed_10m",
-            "windgusts_10m",
-            "winddirection_10m",
-        ],
-    )
-    df = df.reset_index().rename(columns={"index": "time"})
-    df["time"] = pd.to_datetime(df["time"])
-    return df
-
-
-@st.cache_resource
-def get_mongo_client():
-    """Initialize MongoDB client once per session."""
-    return MongoClient(st.secrets["mongo"]["uri"])
-
-
-@st.cache_data(ttl=600, show_spinner="Loading Elhub data...")
-def load_elhub_data():
-    """Load Elhub production data from MongoDB."""
-    client = get_mongo_client()
-    db = client["elhub"]
-    collection = db["production_silver"]
-    data = list(collection.find({}, {"_id": 0}))
-    df = pd.DataFrame(data)
-    df["starttime"] = pd.to_datetime(df["starttime"])
-    if "month" not in df.columns:
-        df["month"] = df["starttime"].dt.month
-    return df
-
-
-# ----------------------------------------------------------
 # Prepare date range for current sidebar selection
 # ----------------------------------------------------------
 start_date = f"{year}-{month}-01"
@@ -81,17 +36,40 @@ end_date = (pd.Timestamp(start_date) + pd.offsets.MonthEnd(1)).strftime("%Y-%m-%
 # ----------------------------------------------------------
 # Load datasets
 # ----------------------------------------------------------
-# Meteo
-meteo_df = get_meteo_data(lat, lon, start_date, end_date)
-if not meteo_df.empty:
-    # daily mean (if hourly data)
-    meteo_daily = meteo_df.groupby(meteo_df["time"].dt.date).mean(numeric_only=True)
-else:
+# Meteo - use get_weather from app_state
+weather_vars = [
+    "temperature_2m",
+    "precipitation",
+    "windspeed_10m",
+    "windgusts_10m",
+    "winddirection_10m",
+]
+try:
+    meteo_df = get_weather(price_area, start_date, end_date, variables=weather_vars)
+    meteo_df = meteo_df.reset_index().rename(columns={"index": "time"})
+    meteo_df["time"] = pd.to_datetime(meteo_df["time"])
+    if not meteo_df.empty:
+        meteo_daily = meteo_df.groupby(meteo_df["time"].dt.date).mean(numeric_only=True)
+    else:
+        meteo_daily = pd.DataFrame()
+except Exception as e:
+    st.warning(f"Could not load weather data: {e}")
+    meteo_df = pd.DataFrame()
     meteo_daily = pd.DataFrame()
 
-# Elhub
-elhub_df = load_elhub_data()
+# Elhub - use session_state
+elhub_df = st.session_state.get("production")
+if elhub_df is None or elhub_df.empty:
+    st.error("Production data not available. Please check that the app has been initialized.")
+    st.stop()
+
+elhub_df = elhub_df.copy()
 elhub_df["starttime"] = pd.to_datetime(elhub_df["starttime"])
+if "month" not in elhub_df.columns:
+    elhub_df["month"] = elhub_df["starttime"].dt.month
+# Map 'group' back to 'productiongroup' if needed for compatibility
+if "productiongroup" not in elhub_df.columns and "group" in elhub_df.columns:
+    elhub_df["productiongroup"] = elhub_df["group"]
 
 # --- Filter based on sidebar selections ---
 filtered = elhub_df[elhub_df["pricearea"] == price_area]
@@ -208,5 +186,5 @@ with summary_cols[1]:
         st.write("No Elhub data loaded.")
 
 st.caption(
-    "💡 Tip: Use the sidebar to change year, area, or month — both datasets update automatically."
+    "Tip: Use the sidebar to change year, area, or month — both datasets update automatically."
 )

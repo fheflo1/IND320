@@ -15,7 +15,6 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.db.mongo_elhub import load_production_silver, load_consumption_silver
 from src.ui.sidebar_controls import sidebar_controls
 
 
@@ -26,14 +25,22 @@ st.set_page_config(layout="wide")
 st.title("Price Areas – Interactive Map (Leaflet)")
 
 
-@st.cache_data(ttl=3600)
 def get_production():
-    return load_production_silver()
+    """Get production data from session state."""
+    df = st.session_state.get("production")
+    if df is None or df.empty:
+        st.error("Production data not available. Please check that the app has been initialized.")
+        st.stop()
+    return df.copy()
 
 
-@st.cache_data(ttl=3600)
 def get_consumption():
-    return load_consumption_silver()
+    """Get consumption data from session state."""
+    df = st.session_state.get("consumption")
+    if df is None or df.empty:
+        st.error("Consumption data not available. Please check that the app has been initialized.")
+        st.stop()
+    return df.copy()
 
 
 # ---------------------------------------------------------

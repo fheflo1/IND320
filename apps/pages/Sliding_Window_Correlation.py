@@ -12,28 +12,7 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.api.meteo_api import fetch_meteo_data
-from src.db.mongo_elhub import load_production_silver, load_consumption_silver
-
-
-# ---------------------------------------------------------
-# PRICEAREA → coordinates
-# ---------------------------------------------------------
-PRICEAREA_COORDS = {
-    "NO1": (59.9139, 10.7522),
-    "NO2": (58.1467, 7.9956),
-    "NO3": (63.4305, 10.3951),
-    "NO4": (69.6492, 18.9553),
-    "NO5": (60.39299, 5.32415),
-}
-
-PRICEAREA_CITY = {
-    "NO1": "Oslo",
-    "NO2": "Kristiansand",
-    "NO3": "Trondheim",
-    "NO4": "Tromsø",
-    "NO5": "Bergen",
-}
+from src.app_state import get_weather, PRICEAREAS
 
 
 # ---------------------------------------------------------
@@ -58,23 +37,24 @@ Features:
 # ---------------------------------------------------------
 # Caching wrappers
 # ---------------------------------------------------------
-@st.cache_data(ttl=1800)
 def load_energy_cached(energy_type):
-    return (
-        load_production_silver()
-        if energy_type == "Production"
-        else load_consumption_silver()
-    )
+    """Get energy data from session state."""
+    key = "production" if energy_type == "Production" else "consumption"
+    df = st.session_state.get(key)
+    if df is None or df.empty:
+        st.error(f"{energy_type} data not available. Please check that the app has been initialized.")
+        st.stop()
+    return df.copy()
 
 
 @st.cache_data(ttl=1800)
-def get_meteo(lat, lon, start, end):
-    df = fetch_meteo_data(
-        lat,
-        lon,
+def get_meteo(pricearea, start, end):
+    """Fetch meteo data using the centralized get_weather helper."""
+    df = get_weather(
+        pricearea,
         start,
         end,
-        [
+        variables=[
             "temperature_2m",
             "precipitation",
             "windspeed_10m",
@@ -142,11 +122,16 @@ window = st.sidebar.slider("Rolling window (hours):", 6, 240, 48)
 # ---------------------------------------------------------
 # FETCH METEO
 # ---------------------------------------------------------
-city = PRICEAREA_CITY.get(pricearea_choice, "Unknown City")
+# Get city name from PRICEAREAS
+city = PRICEAREAS.get(pricearea_choice, ("Unknown City",))[0]
 st.info(f"Using METEO data for {pricearea_choice} ({city})")
 
-lat, lon = PRICEAREA_COORDS[pricearea_choice]
-df_m = get_meteo(lat, lon, start_date, end_date)
+try:
+    df_m = get_meteo(pricearea_choice, start_date, end_date)
+except Exception as e:
+    st.error(f"Could not load weather data: {e}")
+    st.stop()
+    
 df_m = df_m.set_index("time").sort_index()
 df_m = df_m.apply(pd.to_numeric, errors="coerce").resample("1H").mean().ffill()
 df_m = df_m[~df_m.index.duplicated()]

@@ -13,7 +13,8 @@ import sys
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
-from src.api.meteo_api import fetch_meteo_data  # your API wrapper
+
+from src.api.meteo_api import fetch_meteo_data
 
 
 # --- Helper: compute SWE from hourly data ---
@@ -81,10 +82,10 @@ start_year, end_year = st.select_slider(
 start_date = f"{start_year}-07-01"
 end_date = f"{end_year+1}-06-30"
 
-st.info(f"Fetching ERA5 data for {start_date} → {end_date}")
+st.info(f"Fetching ERA5 data for {start_date} to {end_date}")
 
 
-# --- Fetch data ---
+# --- Fetch data using direct API call (coordinates from map click) ---
 @st.cache_data(ttl=3600, show_spinner="Fetching weather data from Open-Meteo...")
 def get_meteo_data(lat, lon, start, end):
     df = fetch_meteo_data(

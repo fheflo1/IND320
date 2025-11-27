@@ -14,7 +14,7 @@ from src.analysis.anomaly_detection import (
     detect_precipitation_anomalies,
 )
 from src.ui.sidebar_controls import sidebar_controls
-from src.api.meteo_api import fetch_meteo_data
+from src.app_state import get_weather
 
 
 st.title("Meteo Analyses (Open-Meteo)")
@@ -22,29 +22,23 @@ st.title("Meteo Analyses (Open-Meteo)")
 price_area, city, lat, lon, year, month = sidebar_controls()
 
 
-# --- Fetch weather data ---
-@st.cache_data(ttl=3600)
-def get_weather(lat, lon, start, end):
-    df = fetch_meteo_data(
-        lat,
-        lon,
-        start,
-        end,
-        [
-            "temperature_2m",
-            "precipitation",
-            "windspeed_10m",
-            "windgusts_10m",
-            "winddirection_10m",
-        ],
-    )
+# --- Fetch weather data using app_state helper ---
+weather_vars = [
+    "temperature_2m",
+    "precipitation",
+    "windspeed_10m",
+    "windgusts_10m",
+    "winddirection_10m",
+]
+start_date, end_date = f"{year}-01-01", f"{year}-12-31"
+
+try:
+    df = get_weather(price_area, start_date, end_date, variables=weather_vars)
     df = df.reset_index().rename(columns={"index": "time"})
     df["time"] = pd.to_datetime(df["time"])
-    return df
-
-
-start_date, end_date = f"{year}-01-01", f"{year}-12-31"
-df = get_weather(lat, lon, start_date, end_date)
+except Exception as e:
+    st.error(f"Could not load weather data: {e}")
+    st.stop()
 
 # --- Tabs for analysis types ---
 tab1, tab2 = st.tabs(["Outlier Detection (SPC)", "Anomaly Detection (LOF)"])
