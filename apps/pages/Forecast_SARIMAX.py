@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+import statsmodels.api as sm
+import numpy as np
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -31,10 +35,7 @@ data_source = st.radio(
 )
 
 with st.spinner("Setting up page… Loading energy data…"):
-    if data_source == "Production":
-        df = load_production_silver()
-    else:
-        df = load_consumption_silver()
+    df = load_production_silver() if data_source == "Production" else load_consumption_silver()
 
 # Detect datetime column
 time_col = None
@@ -51,106 +52,92 @@ if time_col is None:
 df[time_col] = pd.to_datetime(df[time_col])
 df = df.set_index(time_col).sort_index()
 
-# Show duplicate count BEFORE fixing
+# Duplicate count BEFORE
 st.write("Duplicate timestamps before:", df.index.duplicated().sum())
 
-# --- Split numeric and categorical columns ---
+# ---- Split numeric / categorical
 numeric_df = df.select_dtypes(include="number")
 other_df   = df.select_dtypes(exclude="number")
 
-# --- Fix duplicates ONCE ---
-# Numeric = sum (energy signals)
+# ---- Fix duplicates ONCE
 numeric_df = numeric_df.groupby(numeric_df.index).sum()
+other_df   = other_df.groupby(other_df.index).first()
 
-# Categorical = keep first
-other_df = other_df.groupby(other_df.index).first()
-
-# --- Recombine after duplicate fix ---
+# ---- Recombine
 df = pd.concat([numeric_df, other_df], axis=1).sort_index()
 
-# --- Resample to hourly ---
-numeric_df = numeric_df.resample("h").mean().interpolate()
-other_df   = other_df.resample("h").ffill()
+# ---- Resample hourly
+numeric_df = numeric_df.resample("H").mean().interpolate()
+other_df   = other_df.resample("H").ffill()
 
 df = pd.concat([numeric_df, other_df], axis=1)
 
-# Show duplicate count AFTER fixing
+# Duplicate count AFTER
 st.write("Duplicate timestamps after:", df.index.duplicated().sum())
 
 
 # ---------------------------------------------------------
-# Forecast target = ALWAYS quantitykwh
+# Forecast target fixed
 # ---------------------------------------------------------
 target = "quantitykwh"
 if target not in df.columns:
-    st.error("Error: The dataset does not contain 'quantitykwh'.")
+    st.error("Error: 'quantitykwh' not found.")
     st.stop()
 
 st.markdown(f"**Forecast target:** `{target}`")
 
+
 # ---------------------------------------------------------
-# Valid exogenous variables
+# Exogenous variables
 # ---------------------------------------------------------
 invalid_exog = {"starttime", "endtime", "timestamp", "time", "group", "pricearea"}
-valid_exog = [
-    col for col in df.columns
-    if col not in invalid_exog and col != target
-]
+valid_exog = [c for c in df.columns if c not in invalid_exog and c != target]
 
-exog_cols = st.multiselect(
-    "Select exogenous variables (optional)",
-    valid_exog,
+exog_cols = st.multiselect("Select exogenous variables (optional)", valid_exog)
+
+
+# ---------------------------------------------------------
+# ACF / PACF Diagnostics
+# ---------------------------------------------------------
+st.subheader("ACF / PACF Diagnostics (Plotly)")
+
+# Compute acf/pacf values
+acf_vals = sm.tsa.acf(df[target], nlags=200, fft=True)
+pacf_vals = sm.tsa.pacf(df[target], nlags=200, method="ywm")
+
+lags = np.arange(len(acf_vals))
+
+# -----------------------------
+# Plotly ACF
+# -----------------------------
+acf_fig = go.Figure()
+acf_fig.add_trace(go.Bar(x=lags, y=acf_vals, marker_color="rgba(0,150,255,0.7)"))
+acf_fig.update_layout(
+    title="Autocorrelation (ACF)",
+    xaxis_title="Lag",
+    yaxis_title="ACF",
+    height=350,
+    showlegend=False
 )
+st.plotly_chart(acf_fig, use_container_width=True)
+
+# -----------------------------
+# Plotly PACF
+# -----------------------------
+pacf_fig = go.Figure()
+pacf_fig.add_trace(go.Bar(x=lags, y=pacf_vals, marker_color="#000080"))
+pacf_fig.update_layout(
+    title="Partial Autocorrelation (PACF)",
+    xaxis_title="Lag",
+    yaxis_title="PACF",
+    height=350,
+    showlegend=False
+)
+st.plotly_chart(pacf_fig, use_container_width=True)
 
 # ---------------------------------------------------------
-# Timeframe selection
+# Timeframe
 # ---------------------------------------------------------
-with st.expander("How long will training take?"):
-    st.markdown(
-        """
-Training time for SARIMAX depends mainly on:
-
-### **1. Amount of training data**
-Larger time windows = longer training.
-- 1–3 months → **fast**
-- 6–12 months → **medium**
-- Several years → **slow**
-
-SARIMAX complexity scales roughly **linearly** with number of time steps.
-
----
-
-### **2. Model complexity**
-Higher values of (p, d, q, P, D, Q) increase training time.
-
-- `(1,1,1)` + `(1,1,1,24)` → **good balance of speed and accuracy**
-- Parameters > 3 often give diminishing returns but add a lot of time.
-
----
-
-### **3. Seasonal period (m)**
-- **m = 24** (daily seasonality) → fast  
-- **m = 168** (weekly seasonality) → slower  
-- Very large `m` values → long estimation time
-
----
-
-### **4. Exogenous variables**
-Adding exogenous variables slightly increases training time.
-
----
-
-### **Summary**
-If the model feels slow:
-- **Reduce the training window**
-- **Lower p, q, P, Q**
-- Keep **d and D ≤ 1**
-- Use **m = 24** unless you know you need weekly seasonality
-
-This keeps forecasting fast and stable.
-        """
-    )
-
 min_date = df.index.min().date()
 max_date = df.index.max().date()
 
@@ -160,77 +147,26 @@ with col1:
 with col2:
     end_date = st.date_input("Training end", max_date, min_value=min_date, max_value=max_date)
 
-forecast_horizon = st.number_input("Forecast horizon (hours)", 24, 24 * 14, 168)
+forecast_horizon = st.number_input("Forecast horizon (hours)", 24, 24*14, 168)
+
 
 # ---------------------------------------------------------
 # SARIMAX parameters
 # ---------------------------------------------------------
 st.subheader("SARIMAX Parameters")
 
-with st.expander("What do the SARIMAX parameters mean?"):
-    st.markdown(
-        """
-### **ARIMA (p, d, q)**
-These parameters control the **time series structure**:
-
-- **p – Autoregressive order (AR)**  
-  How many previous time steps the model uses.  
-  Higher `p` = longer memory.
-
-- **d – Differencing order**  
-  Number of times to difference the series to make it stationary.  
-  Typical values: **0 or 1**.
-
-- **q – Moving Average order (MA)**  
-  How many past forecast errors the model uses.
-
----
-
-### **Seasonal part (P, D, Q, m)**
-Used when the data has repeating patterns (daily, weekly, yearly).
-
-- **P – Seasonal AR order**  
-- **D – Seasonal differencing**  
-- **Q – Seasonal MA order**  
-- **m – Season length**  
-  Example for hourly data:  
-  - Daily seasonality → **24**  
-  - Weekly seasonality → **168**  
-
-If unsure, use **m = 24** (daily seasonality).
-
----
-
-### **Exogenous variables (optional)**
-External factors that help explain the main series, e.g.:
-
-- Weather (temperature, wind, solar radiation)
-- Price signals
-- Market indicators
-
-Must be **known in the future** to use them in forecasting.
-
----
-
-### **Tips**
-- Start simple: `(p,d,q) = (1,1,1)` and `(P,D,Q,m) = (1,1,1,24)`
-- If the model fails to converge, reduce parameters
-- Differencing (`d` and `D`) should rarely exceed **1**
-        """
-    )
-
-
-p = st.number_input("p (AR order)", 0, 12, 1)
-d = st.number_input("d (Differencing order)", 0, 2, 0)
-q = st.number_input("q (MA order)", 0, 12, 1)
+p  = st.number_input("p (AR order)", 0, 12, 1)
+d  = st.number_input("d (Differencing order)", 0, 2, 0)
+q  = st.number_input("q (MA order)", 0, 12, 1)
 
 sp = st.number_input("P (seasonal AR order)", 0, 12, 1)
 sd = st.number_input("D (seasonal differencing order)", 0, 2, 1)
 sq = st.number_input("Q (seasonal MA order)", 0, 12, 1)
-m = st.number_input("m (Season length)", 1, 365, 168)
+m  = st.number_input("m (Season length)", 1, 365, 168)
 
 order = (p, d, q)
 seasonal_order = (sp, sd, sq, m)
+
 
 # ---------------------------------------------------------
 # Run Forecast
@@ -242,50 +178,46 @@ if st.button("Run Forecast"):
         st.stop()
 
     st.write("Preparing data…")
+    y, X = prepare_data(df, target, str(start_date), str(end_date), exog_cols)
 
-    y, X = prepare_data(
-        df,
-        target,
-        str(start_date),
-        str(end_date),
-        exog_cols,
-    )
-
-    st.write("Fitting model… (slow – not cached)")
+    st.write("Fitting model…")
     model = fit_sarimax(y, X, order, seasonal_order)
 
-    # Build future exogenous frame
+    # Build future exog
     if exog_cols:
-        future_index = pd.date_range(
-            start=end_date,
-            periods=forecast_horizon + 1,
-            freq="H"
-        )[1:]
-
+        future_index = pd.date_range(start=end_date, periods=forecast_horizon + 1, freq="H")[1:]
         last_vals = df[exog_cols].iloc[-1]
         X_future = pd.DataFrame([last_vals] * forecast_horizon, index=future_index)
     else:
         X_future = None
 
     model_params = (model, order, seasonal_order, y, X)
-
-    forecast, lower, upper = run_forecast(
-        model_params=model_params,
-        steps=forecast_horizon,
-        X_future=X_future,
-    )
+    forecast, lower, upper = run_forecast(model_params, steps=forecast_horizon, X_future=X_future)
 
     # ---------------------------------------------------------
-    # Plot forecast
+    # Combined plot: historical, one-step, dynamic
     # ---------------------------------------------------------
     fig = go.Figure()
 
+    # Historical
+    fig.add_trace(go.Scatter(x=y.index, y=y, mode="lines", name="Historical"))
+
+    # One-step-ahead in-sample
+    pred_insample = model.get_prediction(start=y.index[0], end=y.index[-1], dynamic=False)
+    pred_insample_mean = pred_insample.predicted_mean
+
     fig.add_trace(go.Scatter(
-        x=y.index, y=y, mode="lines", name="Historical"
+        x=pred_insample_mean.index,
+        y=pred_insample_mean,
+        mode="lines",
+        name="One-step ahead",
+        line=dict(dash="dash")
     ))
-    fig.add_trace(go.Scatter(
-        x=forecast.index, y=forecast, mode="lines", name="Forecast"
-    ))
+
+    # Dynamic forecast
+    fig.add_trace(go.Scatter(x=forecast.index, y=forecast, mode="lines", name="Dynamic Forecast"))
+
+    # Confidence intervals
     fig.add_trace(go.Scatter(
         x=forecast.index.tolist() + forecast.index[::-1].tolist(),
         y=upper.tolist() + lower[::-1].tolist(),
