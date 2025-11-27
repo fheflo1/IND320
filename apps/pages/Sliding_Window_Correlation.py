@@ -61,7 +61,7 @@ Features:
 # ---------------------------------------------------------
 # Caching wrappers
 # ---------------------------------------------------------
-def load_energy_cached(energy_type):
+def get_energy_data(energy_type):
     """Get energy data from session state."""
     return (
         st.session_state.production
@@ -109,7 +109,7 @@ st.sidebar.header("Correlation Settings")
 
 energy_type = st.sidebar.radio("Energy Type:", ["Production", "Consumption"])
 
-df_energy_raw = load_energy_cached(energy_type)
+df_energy_raw = get_energy_data(energy_type)
 
 if df_energy_raw is None or df_energy_raw.empty:
     st.error(f"{energy_type} data not available. Please check database connection.")

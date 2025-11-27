@@ -30,13 +30,21 @@ st.title("Price Areas – Interactive Map (Leaflet)")
 
 
 def get_production():
-    """Get production data from session state."""
-    return st.session_state.production
+    """Get production data from session state with error handling."""
+    data = st.session_state.production
+    if data is None or data.empty:
+        st.error("Production data not available. Please check database connection.")
+        st.stop()
+    return data
 
 
 def get_consumption():
-    """Get consumption data from session state."""
-    return st.session_state.consumption
+    """Get consumption data from session state with error handling."""
+    data = st.session_state.consumption
+    if data is None or data.empty:
+        st.error("Consumption data not available. Please check database connection.")
+        st.stop()
+    return data
 
 
 # ---------------------------------------------------------

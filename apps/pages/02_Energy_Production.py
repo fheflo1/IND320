@@ -25,8 +25,11 @@ if df is None or df.empty:
     st.stop()
 
 # Ensure required columns exist
-if "starttime" in df.columns:
-    df["starttime"] = pd.to_datetime(df["starttime"])
+if "starttime" not in df.columns:
+    st.error("Production data missing 'starttime' column.")
+    st.stop()
+
+df["starttime"] = pd.to_datetime(df["starttime"])
 if "month" not in df.columns:
     df["month"] = df["starttime"].dt.month
 
