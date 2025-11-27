@@ -14,41 +14,12 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.db.mongo_elhub import load_production_silver, load_consumption_silver
-from src.api.meteo_api import fetch_meteo_data
+from src.app_state import get_weather, PRICEAREAS, DEFAULT_WEATHER_VARS
 from src.forecast.sarimax_utils import (
     prepare_data,
     fit_sarimax,
     run_forecast,
 )
-
-
-# ---------------------------------------------------------
-# City → coordinate mapping
-# (fallback if dataset doesn't contain pricearea)
-# ---------------------------------------------------------
-PRICEAREA_COORDS = {
-    "NO1": ("Oslo", 59.91, 10.75),
-    "NO2": ("Kristiansand", 58.15, 8.00),
-    "NO3": ("Trondheim", 63.43, 10.39),
-    "NO4": ("Tromsø", 69.65, 18.96),
-    "NO5": ("Bergen", 60.39, 5.32),
-}
-
-
-# ---------------------------------------------------------
-# Cache ERA5 WEATHER DOWNLOADS
-# ---------------------------------------------------------
-@st.cache_data(show_spinner=True, ttl=3600)
-def load_era5_weather(lat, lon, start_date, end_date, variables):
-    """Cached wrapper for ERA5 downloads."""
-    return fetch_meteo_data(
-        lat=lat,
-        lon=lon,
-        start_date=start_date,
-        end_date=end_date,
-        variables=variables,
-    )
 
 
 # ---------------------------------------------------------
@@ -62,12 +33,19 @@ st.title("SARIMAX Energy Forecasting")
 # ---------------------------------------------------------
 data_source = st.radio("Select dataset", ["Production", "Consumption"], horizontal=True)
 
-with st.spinner("Loading energy data…"):
-    df = (
-        load_production_silver()
-        if data_source == "Production"
-        else load_consumption_silver()
-    )
+# Load from session_state
+if data_source == "Production":
+    df = st.session_state.get("production")
+    if df is None or df.empty:
+        st.error("Production data not available. Please check that the app has been initialized.")
+        st.stop()
+else:
+    df = st.session_state.get("consumption")
+    if df is None or df.empty:
+        st.error("Consumption data not available. Please check that the app has been initialized.")
+        st.stop()
+
+df = df.copy()
 
 
 # ---------------------------------------------------------
@@ -116,17 +94,9 @@ st.markdown(f"**Forecast target:** `{target}`")
 # ---------------------------------------------------------
 # Weather exogenous variables
 # ---------------------------------------------------------
-weather_vars = [
-    "temperature_2m",
-    "precipitation",
-    "windspeed_10m",
-    "windgusts_10m",
-    "winddirection_10m",
-]
-
 weather_selected = st.multiselect(
     f"**Exogenous Variables:** Weather variables (ERA5)",
-    weather_vars,
+    DEFAULT_WEATHER_VARS,
 )
 
 
@@ -196,17 +166,17 @@ if st.button("Run Forecast"):
     # ---------------------------------------------------------
     if weather_selected:
         area = df["pricearea"].iloc[0] if "pricearea" in df.columns else "NO1"
-        city, lat, lon = PRICEAREA_COORDS.get(area, PRICEAREA_COORDS["NO1"])
+        city, lat, lon = PRICEAREAS.get(area, PRICEAREAS["NO1"])
 
-        st.info(f"Fetching ERA5 weather for {city} ({lat}, {lon})…")
+        st.info(f"Fetching ERA5 weather for {city} ({lat}, {lon})...")
 
-        weather_df = load_era5_weather(
-            lat, lon, str(start_date), str(end_date), weather_selected
-        )
-
-        weather_df.index = weather_df.index.tz_convert(None)
-
-        df = df.join(weather_df, how="left").interpolate().sort_index()
+        try:
+            weather_df = get_weather(area, str(start_date), str(end_date), variables=weather_selected)
+            weather_df.index = weather_df.index.tz_convert(None)
+            df = df.join(weather_df, how="left").interpolate().sort_index()
+        except Exception as e:
+            st.error(f"Could not load weather data: {e}")
+            st.stop()
 
     # Combine all exogenous names
     exog_cols = weather_selected  # add other exogenous if needed here

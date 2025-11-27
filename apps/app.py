@@ -1,125 +1,92 @@
+import sys
+from pathlib import Path
 import streamlit as st
+
+# --- Project root setup ---
+project_root = Path(__file__).resolve().parents[1]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+from src.app_state import init_app_state
 
 st.set_page_config(page_title="IND320 Dashboard", layout="wide")
 
+# --- Initialize app state with spinner ---
+with st.spinner("Loading data and preloading datasets..."):
+    init_app_state()
+
+# --- Navigation configuration ---
+NAVIGATION = {
+    "Home": ["pages/01_Home_Data_Overview.py"],
+    "Data Selection": ["pages/09_Map_and_Selectors.py"],
+    "Energy": [
+        "pages/02_Energy_Production.py",
+        "pages/03_Production_STL_and_Spectrogram.py",
+        "pages/06_Sliding_Window_Correlation.py",
+    ],
+    "Weather": [
+        "pages/04_Weather_Overview.py",
+        "pages/05_Meteo_Analyses.py",
+        "pages/08_Snow_Drift.py",
+    ],
+    "Forecasting": ["pages/07_Forecast_SARIMAX.py"],
+}
+
+
+# --- Helper to extract page name from path ---
+def page_label(path):
+    name = Path(path).stem
+    # Remove leading number prefixes like "01_", "02_", etc.
+    if name[:2].isdigit() and name[2] == "_":
+        name = name[3:]
+    return name.replace("_", " ")
+
+
+# --- Session state defaults ---
+if "nav_section" not in st.session_state:
+    st.session_state.nav_section = list(NAVIGATION.keys())[0]
+
+if "nav_page" not in st.session_state:
+    st.session_state.nav_page = NAVIGATION[st.session_state.nav_section][0]
+
+
+# --- Sidebar navigation ---
+st.sidebar.header("Navigation")
+
+section = st.sidebar.selectbox(
+    "Section",
+    list(NAVIGATION.keys()),
+    index=list(NAVIGATION.keys()).index(st.session_state.nav_section),
+    key="nav_section",
+)
+
+pages = NAVIGATION[section]
+page_labels = [page_label(p) for p in pages]
+
+# Update page if section changed
+if st.session_state.nav_page not in pages:
+    st.session_state.nav_page = pages[0]
+
+selected_label = st.sidebar.radio(
+    "Page",
+    page_labels,
+    index=pages.index(st.session_state.nav_page) if st.session_state.nav_page in pages else 0,
+)
+
+# Update session state with selected page path
+selected_page = pages[page_labels.index(selected_label)]
+if selected_page != st.session_state.nav_page:
+    st.session_state.nav_page = selected_page
+    st.switch_page(selected_page)
+
+
+# --- Main content ---
 st.title("IND320 — Data to Decisions Dashboard")
 st.markdown("<div style='height: 25px'></div>", unsafe_allow_html=True)
 st.info(
     """
     This dashboard presents energy production and meteorological analyses 
     for the IND320 course.  
-    Use the buttons below or the sidebar to explore each section.
+    Use the sidebar navigation to explore each section.
     """
 )
-
-# --- CSS for consistent button layout ---
-st.markdown(
-    """
-<style>
-/* Center all Streamlit elements on the page */
-.main > div {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Style for buttons */
-div.stButton > button {
-    width: 90%;
-    max-width: 480px;
-    min-height: 160px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #308CBA, #256EA3);
-    color: #EDEFF2;
-    border: none;
-    font-size: 18px;
-    font-weight: 500;
-    transition: all .25s ease;
-    cursor: pointer;
-    text-align: center;
-    padding: 18px;
-    margin: auto;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
-}
-
-/* Hover animation */
-div.stButton > button:hover {
-    background: linear-gradient(135deg, #2A2A2A, #1E1E1E);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-}
-
-/* Responsive scaling */
-@media (max-width: 1600px) {
-    div.stButton > button {
-        min-height: 140px;
-        font-size: 16px;
-    }
-}
-@media (max-width: 1200px) {
-    div[data-testid="column"] {
-        flex: 1 1 100% !important;
-    }
-    div.stButton > button {
-        width: 100%;
-        min-height: 130px;
-    }
-}
-@media (max-width: 800px) {
-    div.stButton > button {
-        font-size: 15px;
-        min-height: 120px;
-    }
-}
-</style>
-""",
-    unsafe_allow_html=True,
-)
-
-
-# --- ROW 1 ---
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    if st.button("🏠 **Home Overview**\n\n Data overview and summaries", key="home"):
-        st.switch_page("pages/01_Home_Data_Overview.py")
-with col2:
-    if st.button(
-        "⚡ **Energy Production**\n\n Explore energy data from Elhub", key="energy"
-    ):
-        st.switch_page("pages/02_Energy_Production.py")
-
-st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-
-# --- ROW 2 ---
-col3, col4 = st.columns(2, gap="large")
-with col3:
-    if st.button(
-        "🔍 **Production Analyses (STL & Spectrogram)**\n\n Decompose and analyze patterns",
-        key="stl",
-    ):
-        st.switch_page("pages/03_Production_STL_and_Spectrogram.py")
-with col4:
-    if st.button(
-        "🌤️ **Weather Data and Line Charts**\n\n Detailed weather observations",
-        key="weather_data",
-    ):
-        st.switch_page("pages/04_Weather_Data_and_Line_Charts.py")
-
-st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-
-# --- ROW 3 ---
-col5, col6 = st.columns(2, gap="large")
-with col5:
-    if st.button(
-        "📊 **Weather Plots**\n\n Interactive visualizations of meteorological data",
-        key="weather_plots",
-    ):
-        st.switch_page("pages/05_Weather_Plots.py")
-with col6:
-    if st.button(
-        "🧭 **Meteo Analyses**\n\n Outlier and anomaly detection (SPC & LOF)",
-        key="meteo_analyses",
-    ):
-        st.switch_page("pages/06_Meteo_Analyses.py")
-
-st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
