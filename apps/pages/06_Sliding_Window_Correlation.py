@@ -196,7 +196,7 @@ if df["corr"].dropna().empty:
 # ---------------------------------------------------------
 # WINDOW SELECTION
 # ---------------------------------------------------------
-st.subheader("🔍 Window Selection (Manual)")
+st.subheader("Window Selection (Manual)")
 
 num_points = len(df)
 center = st.slider(

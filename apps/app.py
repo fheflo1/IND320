@@ -93,11 +93,11 @@ div.stButton > button:hover {
 # --- ROW 1 ---
 col1, col2 = st.columns(2, gap="large")
 with col1:
-    if st.button("🏠 **Home Overview**\n\n Data overview and summaries", key="home"):
+    if st.button("**Home Overview**\n\n Data overview and summaries", key="home"):
         st.switch_page("pages/01_Home_Data_Overview.py")
 with col2:
     if st.button(
-        "⚡ **Energy Production**\n\n Explore energy data from Elhub", key="energy"
+        "**Energy Production**\n\n Explore energy data from Elhub", key="energy"
     ):
         st.switch_page("pages/02_Energy_Production.py")
 
@@ -107,13 +107,13 @@ st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 col3, col4 = st.columns(2, gap="large")
 with col3:
     if st.button(
-        "🔍 **Production Analyses (STL & Spectrogram)**\n\n Decompose and analyze patterns",
+        "**Production Analyses (STL & Spectrogram)**\n\n Decompose and analyze patterns",
         key="stl",
     ):
         st.switch_page("pages/03_Production_STL_and_Spectrogram.py")
 with col4:
     if st.button(
-        "🌤️ **Weather Overview**\n\n Data tables and interactive visualizations",
+        "**Weather Overview**\n\n Data tables and interactive visualizations",
         key="weather_overview",
     ):
         st.switch_page("pages/04_Weather_Overview.py")
@@ -124,7 +124,7 @@ st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
 col5, col6 = st.columns(2, gap="large")
 with col5:
     if st.button(
-        "🧭 **Meteo Analyses**\n\n Outlier and anomaly detection (SPC & LOF)",
+        "**Meteo Analyses**\n\n Outlier and anomaly detection (SPC & LOF)",
         key="meteo_analyses",
     ):
         st.switch_page("pages/05_Meteo_Analyses.py")

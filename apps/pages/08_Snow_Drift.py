@@ -127,7 +127,7 @@ for season, g in df.groupby("season"):
     records.append({"season": season, "Qt_kgm": Qt})
 
 yearly = pd.DataFrame(records)
-st.subheader("📊 Annual Snow Drift")
+st.subheader("Annual Snow Drift")
 st.dataframe(yearly)
 
 # --- Plot Snow Drift ---

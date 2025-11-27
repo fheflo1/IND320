@@ -65,7 +65,7 @@ else:
     )
 
 # --- Tabs for different views ---
-tab1, tab2 = st.tabs(["📊 Data Table & Line Charts", "📈 Interactive Plots"])
+tab1, tab2 = st.tabs(["Data Table & Line Charts", "Interactive Plots"])
 
 # =============================================================================
 # TAB 1: Data Table & Line Charts
