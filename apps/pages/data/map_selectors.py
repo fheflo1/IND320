@@ -15,11 +15,7 @@ project_root = Path(__file__).resolve().parents[3]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.ui.navigation import render_navigation
 from src.ui.sidebar_controls import sidebar_controls
-
-# --- Render navigation sidebar ---
-render_navigation()
 
 
 # ---------------------------------------------------------

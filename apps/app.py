@@ -8,27 +8,13 @@ if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
 from src.app_state import init_app_state
-from src.ui.navigation import render_navigation
-
-st.set_page_config(page_title="IND320 Dashboard", layout="wide")
+from src.ui.navigation import create_navigation, render_option_menu_navigation
 
 # --- Initialize app state ---
 with st.spinner("Loading data and preloading datasets..."):
     init_app_state()
 
-# --- Render navigation sidebar ---
-render_navigation()
-
-# -------------------------------------------------------------
-# Home page (root page content)
-# -------------------------------------------------------------
-st.title("IND320 — Data to Decisions Dashboard")
-st.markdown("<div style='height: 25px'></div>", unsafe_allow_html=True)
-
-st.info(
-    """
-    This dashboard presents energy production and meteorological analyses 
-    for the IND320 course.  
-    Use the sidebar navigation to explore each section.
-    """
-)
+# --- Create navigation (registers pages) and render custom sidebar ---
+pg = create_navigation()
+render_option_menu_navigation()
+pg.run()

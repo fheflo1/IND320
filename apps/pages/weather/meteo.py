@@ -9,16 +9,12 @@ project_root = Path(__file__).resolve().parents[3]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.ui.navigation import render_navigation
 from src.analysis.anomaly_detection import (
     detect_temperature_outliers,
     detect_precipitation_anomalies,
 )
 from src.ui.sidebar_controls import sidebar_controls
 from src.app_state import get_weather, DEFAULT_WEATHER_VARS
-
-# --- Render navigation sidebar ---
-render_navigation()
 
 st.title("Meteo Analyses (Open-Meteo)")
 
