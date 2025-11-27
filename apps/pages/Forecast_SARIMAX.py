@@ -14,13 +14,16 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.db.mongo_elhub import load_production_silver, load_consumption_silver
+from src.app_state import init_app_state
 from src.api.meteo_api import fetch_meteo_data
 from src.forecast.sarimax_utils import (
     prepare_data,
     fit_sarimax,
     run_forecast,
 )
+
+# Initialize app state (preload data if not already loaded)
+init_app_state()
 
 
 # ---------------------------------------------------------
@@ -62,12 +65,18 @@ st.title("SARIMAX Energy Forecasting")
 # ---------------------------------------------------------
 data_source = st.radio("Select dataset", ["Production", "Consumption"], horizontal=True)
 
-with st.spinner("Loading energy data…"):
-    df = (
-        load_production_silver()
-        if data_source == "Production"
-        else load_consumption_silver()
-    )
+# Get data from session state instead of loading directly
+df = (
+    st.session_state.production
+    if data_source == "Production"
+    else st.session_state.consumption
+)
+
+if df is None or df.empty:
+    st.error(f"{data_source} data not available. Please check database connection.")
+    st.stop()
+
+df = df.copy()
 
 
 # ---------------------------------------------------------

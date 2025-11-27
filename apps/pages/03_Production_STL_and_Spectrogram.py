@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from pymongo import MongoClient
 from pathlib import Path
 import sys
 
@@ -9,8 +8,12 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
+from src.app_state import init_app_state
 from src.ui.sidebar_controls import sidebar_controls
 from src.analysis.plots import plot_stl_decomposition, plot_spectrogram
+
+# Initialize app state (preload data if not already loaded)
+init_app_state()
 
 # --- Sidebar (shared across app) ---
 price_area, city, lat, lon, year, month = sidebar_controls()
@@ -19,27 +22,15 @@ price_area, city, lat, lon, year, month = sidebar_controls()
 st.title("Production Analyses (Elhub)")
 st.caption("Analyze production data by STL decomposition and frequency spectrum.")
 
+# --- Get data from session state ---
+df = st.session_state.production
+if df is None or df.empty:
+    st.error("Production data not available. Please check database connection.")
+    st.stop()
 
-# --- Mongo connection ---
-@st.cache_resource
-def get_mongo_client():
-    return MongoClient(st.secrets["mongo"]["uri"])
-
-
-@st.cache_data(ttl=600)
-def load_elhub_data():
-    client = get_mongo_client()
-    db = client["elhub"]
-    col = db["production_silver"]
-    data = list(col.find({}, {"_id": 0}))
-    df = pd.DataFrame(data)
-    df["starttime"] = pd.to_datetime(df["starttime"])
-    df["month"] = df["starttime"].dt.strftime("%m")
-    return df
-
-
-with st.spinner("Loading Elhub data..."):
-    df = load_elhub_data()
+# Ensure required columns exist
+df["starttime"] = pd.to_datetime(df["starttime"])
+df["month"] = df["starttime"].dt.strftime("%m")
 
 # --- Filter by sidebar selections ---
 filtered = df[df["pricearea"] == price_area].copy()

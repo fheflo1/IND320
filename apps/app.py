@@ -1,14 +1,94 @@
 import streamlit as st
+from pathlib import Path
+import sys
+
+# --- Project imports setup ---
+project_root = Path(__file__).resolve().parents[1]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+from src.app_state import init_app_state
 
 st.set_page_config(page_title="IND320 Dashboard", layout="wide")
 
+# Initialize app state and preload data
+init_app_state()
+
+# --- Navigation Structure ---
+NAVIGATION = {
+    "🏠 Home": {
+        "pages": ["Home Data Overview"],
+        "files": {"Home Data Overview": "pages/01_Home_Data_Overview.py"},
+    },
+    "🗺️ Data Selection": {
+        "pages": ["Map & Selectors"],
+        "files": {"Map & Selectors": "pages/Map_and_Selectors.py"},
+    },
+    "⚡ Energy": {
+        "pages": [
+            "Energy Production",
+            "Production STL & Spectrogram",
+            "Sliding Window Correlation",
+        ],
+        "files": {
+            "Energy Production": "pages/02_Energy_Production.py",
+            "Production STL & Spectrogram": "pages/03_Production_STL_and_Spectrogram.py",
+            "Sliding Window Correlation": "pages/Sliding_Window_Correlation.py",
+        },
+    },
+    "🌦️ Weather": {
+        "pages": ["Weather Overview", "Meteo Analyses", "Snow Drift"],
+        "files": {
+            "Weather Overview": "pages/04_Weather_Data_and_Line_Charts.py",
+            "Meteo Analyses": "pages/06_Meteo_Analyses.py",
+            "Snow Drift": "pages/Snow_Drift.py",
+        },
+    },
+    "🔮 Forecasting": {
+        "pages": ["SARIMAX Forecast"],
+        "files": {"SARIMAX Forecast": "pages/Forecast_SARIMAX.py"},
+    },
+}
+
+# --- Initialize navigation state ---
+if "nav_section" not in st.session_state:
+    st.session_state.nav_section = "🏠 Home"
+if "nav_page" not in st.session_state:
+    st.session_state.nav_page = "Home Data Overview"
+
+# --- Sidebar Navigation ---
+st.sidebar.title("Navigation")
+
+section = st.sidebar.selectbox(
+    "Section",
+    options=list(NAVIGATION.keys()),
+    index=list(NAVIGATION.keys()).index(st.session_state.nav_section),
+    key="nav_section",
+)
+
+# Get pages for selected section
+section_pages = NAVIGATION[section]["pages"]
+
+# Radio buttons for subpages
+page = st.sidebar.radio(
+    f"{section} Pages:",
+    options=section_pages,
+    key="nav_page_radio",
+)
+
+# Update session state
+st.session_state.nav_page = page
+
+st.sidebar.divider()
+
+# --- Main Content Area ---
 st.title("IND320 — Data to Decisions Dashboard")
 st.markdown("<div style='height: 25px'></div>", unsafe_allow_html=True)
 st.info(
     """
     This dashboard presents energy production and meteorological analyses 
     for the IND320 course.  
-    Use the buttons below or the sidebar to explore each section.
+    Use the sidebar navigation to explore each section, or click the buttons below.
     """
 )
 
@@ -76,6 +156,17 @@ div.stButton > button:hover {
     unsafe_allow_html=True,
 )
 
+# --- Navigation button to go to selected page ---
+selected_file = NAVIGATION[section]["files"].get(page)
+if selected_file:
+    if st.sidebar.button(f"Go to {page}", key="nav_go_button"):
+        st.switch_page(selected_file)
+
+st.sidebar.divider()
+st.sidebar.caption("💡 Select a section and page, then click 'Go to' to navigate.")
+
+# --- Quick Access Buttons on Home Page ---
+st.subheader("Quick Access")
 
 # --- ROW 1 ---
 col1, col2 = st.columns(2, gap="large")
@@ -121,5 +212,22 @@ with col6:
         key="meteo_analyses",
     ):
         st.switch_page("pages/06_Meteo_Analyses.py")
+
+st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+
+# --- ROW 4 ---
+col7, col8 = st.columns(2, gap="large")
+with col7:
+    if st.button(
+        "🗺️ **Map & Selectors**\n\n Interactive price area map",
+        key="map_selectors",
+    ):
+        st.switch_page("pages/Map_and_Selectors.py")
+with col8:
+    if st.button(
+        "🔮 **SARIMAX Forecast**\n\n Energy forecasting with weather",
+        key="forecast",
+    ):
+        st.switch_page("pages/Forecast_SARIMAX.py")
 
 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
