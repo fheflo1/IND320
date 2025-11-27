@@ -2,6 +2,17 @@
 """
 Reusable navigation component for the IND320 Dashboard.
 Provides a consistent sidebar navigation across all pages using option_menu.
+
+This module provides two main functions:
+- create_navigation(): Registers all pages with Streamlit's navigation system
+- render_option_menu_navigation(): Renders the custom styled sidebar
+
+The navigation uses session_state to track:
+- nav_initialized: Prevents auto-navigation on first load (Streamlit reruns
+  the script on every interaction, so we need to distinguish between the
+  initial page load and user clicks)
+- last_selections: Tracks previous menu selections to detect user changes
+- _dashboard_page: Stores the dashboard page object for navigation
 """
 
 import streamlit as st
@@ -46,34 +57,34 @@ def home_page():
     )
 
 
-# Store page objects globally so we can reference them
-_dashboard_page = None
-
-
 def create_navigation():
     """
     Create the navigation structure using st.navigation() with st.Page objects.
     This registers all pages so st.switch_page() works properly.
+
+    The dashboard page object is stored in session_state for use by the
+    Dashboard button in the sidebar.
 
     Returns
     -------
     st.navigation
         The navigation object that handles page routing.
     """
-    global _dashboard_page
-
-    # Create dashboard page object
-    _dashboard_page = st.Page(home_page, title="Dashboard", icon="🏠")
+    # Create dashboard page object and store in session_state
+    dashboard_page = st.Page(home_page, title="Dashboard", icon="🏠")
+    st.session_state["_dashboard_page"] = dashboard_page
 
     # Define all pages with their paths - this registers them with Streamlit
     pages = {
         "Main": [
-            _dashboard_page,
+            dashboard_page,
         ],
         "Energy": [
             st.Page("pages/energy/home.py", title="Data Overview", icon="📊"),
             st.Page("pages/energy/production.py", title="Energy Production", icon="⚡"),
-            st.Page("pages/energy/stl.py", title="Production STL & Spectrogram", icon="📈"),
+            st.Page(
+                "pages/energy/stl.py", title="Production STL & Spectrogram", icon="📈"
+            ),
             st.Page(
                 "pages/energy/correlation.py",
                 title="Sliding Window Correlation",
@@ -93,18 +104,26 @@ def create_navigation():
         ],
     }
 
-    # Create navigation - this registers pages but we'll use custom sidebar
+    # Create navigation with hidden position (we use custom sidebar)
     return st.navigation(pages, position="hidden")
 
 
 def render_option_menu_navigation():
     """
     Render custom option_menu navigation in the sidebar.
-    This provides the styled navigation while using st.switch_page() for routing.
-    """
-    global _dashboard_page
 
-    # Initialize navigation state
+    This provides the styled navigation using streamlit_option_menu while
+    using st.switch_page() for routing. The function tracks menu selections
+    in session_state to detect user changes and trigger navigation only when
+    the user actually clicks a different menu item.
+
+    Navigation Logic:
+    1. On first load, nav_initialized is False - we store selections but don't navigate
+    2. On subsequent interactions, we compare current selections with previous ones
+    3. If a selection changed, we navigate to the new page
+    4. This prevents auto-navigation loops and unwanted page switches
+    """
+    # Initialize navigation state if not present
     if "nav_initialized" not in st.session_state:
         st.session_state.nav_initialized = False
 
@@ -114,8 +133,9 @@ def render_option_menu_navigation():
     with st.sidebar:
         # Dashboard button at top
         if st.button("🏠 Dashboard", use_container_width=True, key="dashboard_btn"):
-            if _dashboard_page is not None:
-                st.switch_page(_dashboard_page)
+            dashboard_page = st.session_state.get("_dashboard_page")
+            if dashboard_page is not None:
+                st.switch_page(dashboard_page)
 
         st.divider()
 
@@ -123,7 +143,7 @@ def render_option_menu_navigation():
         selected_energy = option_menu(
             "Energy",
             options=list(PAGE_MAP["Energy"].keys()),
-            icons=["database", "lightning", "graph-up", "link"],
+            icons=["database", "lightning-charge", "bar-chart", "link"],
             default_index=0,
             key="nav_energy_menu",
         )
@@ -164,6 +184,7 @@ def render_option_menu_navigation():
     }
 
     # Navigation Logic — only active AFTER first interaction
+    # This prevents auto-navigation on initial page load
     if st.session_state.nav_initialized:
         for category, selected_option in current_selections.items():
             prev_selection = st.session_state.last_selections.get(category)
