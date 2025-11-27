@@ -29,7 +29,9 @@ def get_production():
     """Get production data from session state."""
     df = st.session_state.get("production")
     if df is None or df.empty:
-        st.error("Production data not available. Please check that the app has been initialized.")
+        st.error(
+            "Production data not available. Please check that the app has been initialized."
+        )
         st.stop()
     return df.copy()
 
@@ -38,7 +40,9 @@ def get_consumption():
     """Get consumption data from session state."""
     df = st.session_state.get("consumption")
     if df is None or df.empty:
-        st.error("Consumption data not available. Please check that the app has been initialized.")
+        st.error(
+            "Consumption data not available. Please check that the app has been initialized."
+        )
         st.stop()
     return df.copy()
 

@@ -131,7 +131,9 @@ with tab_plots:
         ].reset_index(drop=True)
 
     # --- Normalization mode ---
-    mode = st.radio("View mode", ["Auto-axes", "Normalize (common scale)"], horizontal=True)
+    mode = st.radio(
+        "View mode", ["Auto-axes", "Normalize (common scale)"], horizontal=True
+    )
     method = None
     if mode.startswith("Normalize"):
         method = st.selectbox(

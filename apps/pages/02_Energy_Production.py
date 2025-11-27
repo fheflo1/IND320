@@ -17,7 +17,9 @@ price_area, city, lat, lon, year, month = sidebar_controls()
 # --- Load data from session_state ---
 df = st.session_state.get("production")
 if df is None or df.empty:
-    st.error("Production data not available. Please check that the app has been initialized.")
+    st.error(
+        "Production data not available. Please check that the app has been initialized."
+    )
     st.stop()
 
 df = df.copy()
