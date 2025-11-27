@@ -59,7 +59,7 @@ def compute_snow_transport(T, F, theta, SWE, ws):
 # =============================
 # STREAMLIT PAGE
 # =============================
-st.title("❄ Snow Drift Calculation & Visualization")
+st.title("Snow Drift Calculation & Visualization")
 
 # --- Get selected map coordinates ---
 if "clicked_lat" not in st.session_state or st.session_state.clicked_lat is None:
@@ -154,7 +154,7 @@ rose = go.Figure(
         theta=directions,
         r=avg_sectors,
         marker_color=avg_sectors,
-        marker_colorscale="ice",
+        marker_colorscale="turbo",  # different options: Viridis, Cividis, Plasma, Hot, Electric, Magma, Inferno, Turbo, Rainbow, Portland
     )
 )
 rose.update_layout(

@@ -24,7 +24,7 @@ PRICE_AREA_COORDS = {
 }
 
 # --- Page title ---
-st.title("📄 Weather Data Table")
+st.title("Weather Data Table")
 
 start_date = f"{year}-{month}-01"
 end_date = pd.Timestamp(start_date) + pd.offsets.MonthEnd(1)

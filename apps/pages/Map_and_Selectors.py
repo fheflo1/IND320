@@ -23,7 +23,7 @@ from src.ui.sidebar_controls import sidebar_controls
 # Page setup
 # ---------------------------------------------------------
 st.set_page_config(layout="wide")
-st.title("🔍 Price Areas – Interactive Map (Leaflet)")
+st.title("Price Areas – Interactive Map (Leaflet)")
 
 
 @st.cache_data(ttl=3600)
