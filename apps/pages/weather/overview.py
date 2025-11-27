@@ -8,13 +8,17 @@ from pathlib import Path
 import sys
 
 # --- Project imports setup ---
-project_root = Path(__file__).resolve().parents[2]
+project_root = Path(__file__).resolve().parents[3]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
+from src.ui.navigation import render_navigation
 from src.ui.sidebar_controls import sidebar_controls
 from src.app_state import get_weather, DEFAULT_WEATHER_VARS
 from src.analysis.plots import plot_weather
+
+# --- Render navigation sidebar ---
+render_navigation()
 
 # --- Sidebar controls ---
 price_area, city, lat, lon, year, month = sidebar_controls()

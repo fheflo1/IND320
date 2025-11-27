@@ -10,16 +10,20 @@ import sys
 # ---------------------------------------------------------
 # Project imports
 # ---------------------------------------------------------
-project_root = Path(__file__).resolve().parents[2]
+project_root = Path(__file__).resolve().parents[3]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
+from src.ui.navigation import render_navigation
 from src.app_state import get_weather, PRICEAREAS, DEFAULT_WEATHER_VARS
 from src.forecast.sarimax_utils import (
     prepare_data,
     fit_sarimax,
     run_forecast,
 )
+
+# --- Render navigation sidebar ---
+render_navigation()
 
 
 # ---------------------------------------------------------

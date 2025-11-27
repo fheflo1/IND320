@@ -4,12 +4,16 @@ from pathlib import Path
 import sys
 
 # --- Project imports setup ---
-project_root = Path(__file__).resolve().parents[2]
+project_root = Path(__file__).resolve().parents[3]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
+from src.ui.navigation import render_navigation
 from src.ui.sidebar_controls import sidebar_controls
 from src.analysis.plots import plot_stl_decomposition, plot_spectrogram
+
+# --- Render navigation sidebar ---
+render_navigation()
 
 # --- Sidebar (shared across app) ---
 price_area, city, lat, lon, year, month = sidebar_controls()
