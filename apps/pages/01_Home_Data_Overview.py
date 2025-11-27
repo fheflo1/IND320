@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import re
 from pathlib import Path
-from pymongo import MongoClient
 import sys
 from calendar import month_name
 
@@ -11,9 +10,12 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
+from src.app_state import init_app_state
 from src.ui.sidebar_controls import sidebar_controls
 from src.api.meteo_api import fetch_meteo_data
 
+# Initialize app state (preload data if not already loaded)
+init_app_state()
 
 # --- Shared sidebar ---
 price_area, city, lat, lon, year, month = sidebar_controls()
@@ -29,7 +31,7 @@ _unit_re = re.compile(r"\(([^)]+)\)")
 
 
 # ----------------------------------------------------------
-# Cached loaders
+# Cached weather data loader
 # ----------------------------------------------------------
 @st.cache_data(ttl=3600, show_spinner="Fetching Open-Meteo data...")
 def get_meteo_data(lat, lon, start, end):
@@ -52,26 +54,6 @@ def get_meteo_data(lat, lon, start, end):
     return df
 
 
-@st.cache_resource
-def get_mongo_client():
-    """Initialize MongoDB client once per session."""
-    return MongoClient(st.secrets["mongo"]["uri"])
-
-
-@st.cache_data(ttl=600, show_spinner="Loading Elhub data...")
-def load_elhub_data():
-    """Load Elhub production data from MongoDB."""
-    client = get_mongo_client()
-    db = client["elhub"]
-    collection = db["production_silver"]
-    data = list(collection.find({}, {"_id": 0}))
-    df = pd.DataFrame(data)
-    df["starttime"] = pd.to_datetime(df["starttime"])
-    if "month" not in df.columns:
-        df["month"] = df["starttime"].dt.month
-    return df
-
-
 # ----------------------------------------------------------
 # Prepare date range for current sidebar selection
 # ----------------------------------------------------------
@@ -89,9 +71,16 @@ if not meteo_df.empty:
 else:
     meteo_daily = pd.DataFrame()
 
-# Elhub
-elhub_df = load_elhub_data()
-elhub_df["starttime"] = pd.to_datetime(elhub_df["starttime"])
+# Elhub - use data from session state
+elhub_df = st.session_state.production
+if elhub_df is None or elhub_df.empty:
+    st.warning("Production data not available from session state.")
+    elhub_df = pd.DataFrame()
+else:
+    elhub_df = elhub_df.copy()
+    elhub_df["starttime"] = pd.to_datetime(elhub_df["starttime"])
+    if "month" not in elhub_df.columns:
+        elhub_df["month"] = elhub_df["starttime"].dt.month
 
 # --- Filter based on sidebar selections ---
 filtered = elhub_df[elhub_df["pricearea"] == price_area]

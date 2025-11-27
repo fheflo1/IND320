@@ -9,12 +9,16 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
+from src.app_state import init_app_state
 from src.analysis.anomaly_detection import (
     detect_temperature_outliers,
     detect_precipitation_anomalies,
 )
 from src.ui.sidebar_controls import sidebar_controls
 from src.api.meteo_api import fetch_meteo_data
+
+# Initialize app state (preload data if not already loaded)
+init_app_state()
 
 
 st.title("Meteo Analyses (Open-Meteo)")

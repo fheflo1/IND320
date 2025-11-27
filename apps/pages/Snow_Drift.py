@@ -13,7 +13,12 @@ import sys
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
+
+from src.app_state import init_app_state
 from src.api.meteo_api import fetch_meteo_data  # your API wrapper
+
+# Initialize app state (preload data if not already loaded)
+init_app_state()
 
 
 # --- Helper: compute SWE from hourly data ---

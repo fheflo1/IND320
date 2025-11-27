@@ -12,8 +12,11 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
+from src.app_state import init_app_state
 from src.api.meteo_api import fetch_meteo_data
-from src.db.mongo_elhub import load_production_silver, load_consumption_silver
+
+# Initialize app state (preload data if not already loaded)
+init_app_state()
 
 
 # ---------------------------------------------------------
@@ -58,12 +61,12 @@ Features:
 # ---------------------------------------------------------
 # Caching wrappers
 # ---------------------------------------------------------
-@st.cache_data(ttl=1800)
-def load_energy_cached(energy_type):
+def get_energy_data(energy_type):
+    """Get energy data from session state."""
     return (
-        load_production_silver()
+        st.session_state.production
         if energy_type == "Production"
-        else load_consumption_silver()
+        else st.session_state.consumption
     )
 
 
@@ -106,7 +109,13 @@ st.sidebar.header("Correlation Settings")
 
 energy_type = st.sidebar.radio("Energy Type:", ["Production", "Consumption"])
 
-df_energy_raw = load_energy_cached(energy_type)
+df_energy_raw = get_energy_data(energy_type)
+
+if df_energy_raw is None or df_energy_raw.empty:
+    st.error(f"{energy_type} data not available. Please check database connection.")
+    st.stop()
+
+df_energy_raw = df_energy_raw.copy()
 
 priceareas = sorted(df_energy_raw["pricearea"].dropna().unique())
 pricearea_choice = st.sidebar.selectbox("Price Area:", priceareas)
