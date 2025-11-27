@@ -13,7 +13,7 @@ if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
 from src.ui.sidebar_controls import sidebar_controls
-from src.app_state import get_weather, PRICEAREAS
+from src.app_state import get_weather, DEFAULT_WEATHER_VARS
 from src.analysis.plots import plot_weather
 
 # --- Sidebar controls ---
@@ -34,18 +34,9 @@ else:
     start_date = f"{year}-{month}-01"
     end_date = (pd.Timestamp(start_date) + pd.offsets.MonthEnd(1)).strftime("%Y-%m-%d")
 
-# --- Weather variables ---
-weather_vars = [
-    "temperature_2m",
-    "precipitation",
-    "windspeed_10m",
-    "windgusts_10m",
-    "winddirection_10m",
-]
-
 # --- Fetch weather data ---
 try:
-    df = get_weather(price_area, start_date, end_date, variables=weather_vars)
+    df = get_weather(price_area, start_date, end_date, variables=DEFAULT_WEATHER_VARS)
     df = df.reset_index().rename(columns={"index": "time"})
     df["time"] = pd.to_datetime(df["time"])
 except Exception as e:

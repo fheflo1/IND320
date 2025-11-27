@@ -12,7 +12,7 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.app_state import get_weather, PRICEAREAS
+from src.app_state import get_weather, PRICEAREAS, DEFAULT_WEATHER_VARS
 
 
 # ---------------------------------------------------------
@@ -50,18 +50,7 @@ def load_energy_cached(energy_type):
 @st.cache_data(ttl=1800)
 def get_meteo(pricearea, start, end):
     """Fetch meteo data using the centralized get_weather helper."""
-    df = get_weather(
-        pricearea,
-        start,
-        end,
-        variables=[
-            "temperature_2m",
-            "precipitation",
-            "windspeed_10m",
-            "windgusts_10m",
-            "winddirection_10m",
-        ],
-    )
+    df = get_weather(pricearea, start, end, variables=DEFAULT_WEATHER_VARS)
     df = df.reset_index().rename(columns={"index": "time"})
     df["time"] = pd.to_datetime(df["time"]).dt.tz_localize(None)
     return df
@@ -106,14 +95,7 @@ start_year, end_year = st.sidebar.select_slider(
 start_date = f"{start_year}-01-01"
 end_date = f"{end_year}-12-31"
 
-meteo_vars = [
-    "temperature_2m",
-    "precipitation",
-    "windspeed_10m",
-    "windgusts_10m",
-    "winddirection_10m",
-]
-meteo_choice = st.sidebar.selectbox("Meteorological variable:", meteo_vars)
+meteo_choice = st.sidebar.selectbox("Meteorological variable:", DEFAULT_WEATHER_VARS)
 
 lag = st.sidebar.slider("Lag (hours):", -240, 240, 0)
 window = st.sidebar.slider("Rolling window (hours):", 6, 240, 48)
@@ -123,7 +105,11 @@ window = st.sidebar.slider("Rolling window (hours):", 6, 240, 48)
 # FETCH METEO
 # ---------------------------------------------------------
 # Get city name from PRICEAREAS
-city = PRICEAREAS.get(pricearea_choice, ("Unknown City",))[0]
+pricearea_data = PRICEAREAS.get(pricearea_choice)
+if pricearea_data:
+    city = pricearea_data[0]
+else:
+    city = "Unknown City"
 st.info(f"Using METEO data for {pricearea_choice} ({city})")
 
 try:

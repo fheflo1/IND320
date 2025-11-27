@@ -11,7 +11,7 @@ if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
 from src.ui.sidebar_controls import sidebar_controls
-from src.app_state import get_weather, PRICEAREAS
+from src.app_state import get_weather, PRICEAREAS, DEFAULT_WEATHER_VARS
 
 
 # --- Shared sidebar ---
@@ -37,15 +37,8 @@ end_date = (pd.Timestamp(start_date) + pd.offsets.MonthEnd(1)).strftime("%Y-%m-%
 # Load datasets
 # ----------------------------------------------------------
 # Meteo - use get_weather from app_state
-weather_vars = [
-    "temperature_2m",
-    "precipitation",
-    "windspeed_10m",
-    "windgusts_10m",
-    "winddirection_10m",
-]
 try:
-    meteo_df = get_weather(price_area, start_date, end_date, variables=weather_vars)
+    meteo_df = get_weather(price_area, start_date, end_date, variables=DEFAULT_WEATHER_VARS)
     meteo_df = meteo_df.reset_index().rename(columns={"index": "time"})
     meteo_df["time"] = pd.to_datetime(meteo_df["time"])
     if not meteo_df.empty:

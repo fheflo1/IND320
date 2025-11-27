@@ -14,7 +14,7 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.app_state import get_weather, PRICEAREAS
+from src.app_state import get_weather, PRICEAREAS, DEFAULT_WEATHER_VARS
 from src.forecast.sarimax_utils import (
     prepare_data,
     fit_sarimax,
@@ -94,17 +94,9 @@ st.markdown(f"**Forecast target:** `{target}`")
 # ---------------------------------------------------------
 # Weather exogenous variables
 # ---------------------------------------------------------
-weather_vars = [
-    "temperature_2m",
-    "precipitation",
-    "windspeed_10m",
-    "windgusts_10m",
-    "winddirection_10m",
-]
-
 weather_selected = st.multiselect(
     f"**Exogenous Variables:** Weather variables (ERA5)",
-    weather_vars,
+    DEFAULT_WEATHER_VARS,
 )
 
 

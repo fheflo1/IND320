@@ -19,6 +19,15 @@ PRICEAREAS = {
     "NO5": ("Bergen", 60.39, 5.32),
 }
 
+# Default weather variables
+DEFAULT_WEATHER_VARS = [
+    "temperature_2m",
+    "precipitation",
+    "windspeed_10m",
+    "windgusts_10m",
+    "winddirection_10m",
+]
+
 
 def init_app_state():
     """
@@ -77,13 +86,7 @@ def get_weather(pricearea, start, end, variables=None):
     ValueError
         If the price area is not found in coordinates
     """
-    variables = variables or [
-        "temperature_2m",
-        "precipitation",
-        "windspeed_10m",
-        "windgusts_10m",
-        "winddirection_10m",
-    ]
+    variables = variables or DEFAULT_WEATHER_VARS
     
     # Create deterministic cache key
     key = f"weather__{pricearea}__{start}__{end}__{'_'.join(variables)}"

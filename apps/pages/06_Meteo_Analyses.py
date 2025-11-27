@@ -14,7 +14,7 @@ from src.analysis.anomaly_detection import (
     detect_precipitation_anomalies,
 )
 from src.ui.sidebar_controls import sidebar_controls
-from src.app_state import get_weather
+from src.app_state import get_weather, DEFAULT_WEATHER_VARS
 
 
 st.title("Meteo Analyses (Open-Meteo)")
@@ -23,17 +23,10 @@ price_area, city, lat, lon, year, month = sidebar_controls()
 
 
 # --- Fetch weather data using app_state helper ---
-weather_vars = [
-    "temperature_2m",
-    "precipitation",
-    "windspeed_10m",
-    "windgusts_10m",
-    "winddirection_10m",
-]
 start_date, end_date = f"{year}-01-01", f"{year}-12-31"
 
 try:
-    df = get_weather(price_area, start_date, end_date, variables=weather_vars)
+    df = get_weather(price_area, start_date, end_date, variables=DEFAULT_WEATHER_VARS)
     df = df.reset_index().rename(columns={"index": "time"})
     df["time"] = pd.to_datetime(df["time"])
 except Exception as e:

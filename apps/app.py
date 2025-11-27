@@ -22,7 +22,6 @@ NAVIGATION = {
     "Energy": [
         "pages/02_Energy_Production.py",
         "pages/03_Production_STL_and_Spectrogram.py",
-        "pages/Forecast_SARIMAX.py",
         "pages/Sliding_Window_Correlation.py",
     ],
     "Weather": [
