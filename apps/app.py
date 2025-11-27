@@ -18,18 +18,18 @@ with st.spinner("Loading data and preloading datasets..."):
 # --- Navigation configuration ---
 NAVIGATION = {
     "Home": ["pages/01_Home_Data_Overview.py"],
-    "Data Selection": ["pages/Map_and_Selectors.py"],
+    "Data Selection": ["pages/09_Map_and_Selectors.py"],
     "Energy": [
         "pages/02_Energy_Production.py",
         "pages/03_Production_STL_and_Spectrogram.py",
-        "pages/Sliding_Window_Correlation.py",
+        "pages/06_Sliding_Window_Correlation.py",
     ],
     "Weather": [
         "pages/04_Weather_Overview.py",
-        "pages/06_Meteo_Analyses.py",
-        "pages/Snow_Drift.py",
+        "pages/05_Meteo_Analyses.py",
+        "pages/08_Snow_Drift.py",
     ],
-    "Forecasting": ["pages/Forecast_SARIMAX.py"],
+    "Forecasting": ["pages/07_Forecast_SARIMAX.py"],
 }
 
 

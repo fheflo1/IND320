@@ -80,10 +80,10 @@ st.subheader(f"Overview for {city} ({price_area}) — {year}-{month}")
 col_weather, col_energy = st.columns(2)
 
 # ==========================================================
-# 🌦️ WEATHER OVERVIEW
+# WEATHER OVERVIEW
 # ==========================================================
 with col_weather:
-    st.markdown("### 🌤️ Open-Meteo Overview")
+    st.markdown("### Open-Meteo Overview")
 
     if meteo_daily.empty:
         st.warning("No weather data available for the selected year and month.")
@@ -106,10 +106,10 @@ with col_weather:
             cols[i % 3].metric(label, display)
 
 # ----------------------------------------------------------
-# ⚡ ENERGY OVERVIEW
+# ENERGY OVERVIEW
 # ----------------------------------------------------------
 with col_energy:
-    st.markdown("### ⚙️ Elhub Production Overview")
+    st.markdown("### Elhub Production Overview")
 
     if filtered.empty:
         available_years = sorted(elhub_df["starttime"].dt.year.unique())
@@ -146,10 +146,10 @@ with col_energy:
                 )
                 st.bar_chart(grouped)
 # ==========================================================
-# 🧾 SUMMARY
+# SUMMARY
 # ==========================================================
 st.divider()
-st.markdown("### 📊 Summary")
+st.markdown("### Summary")
 
 summary_cols = st.columns(2)
 with summary_cols[0]:

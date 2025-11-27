@@ -37,7 +37,7 @@ except Exception as e:
 tab1, tab2 = st.tabs(["Outlier Detection (SPC)", "Anomaly Detection (LOF)"])
 
 # ============================================================
-# 🔹 TAB 1 — SPC Temperature Outliers
+# TAB 1 — SPC Temperature Outliers
 # ============================================================
 with tab1:
     st.subheader("Temperature Outlier Detection (SPC)")
@@ -97,7 +97,7 @@ with tab1:
         st.error(f"Error: {e}")
 
 # ============================================================
-# 🔹 TAB 2 — LOF Precipitation Anomalies
+# TAB 2 — LOF Precipitation Anomalies
 # ============================================================
 with tab2:
     st.subheader("Precipitation Anomaly Detection (LOF)")

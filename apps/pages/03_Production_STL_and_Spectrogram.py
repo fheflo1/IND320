@@ -127,7 +127,7 @@ with tab2:
         # Optional download button
         csv = subset.to_csv(index=False).encode("utf-8")
         st.download_button(
-            "⬇️ Download Spectrogram Data (CSV)",
+            "Download Spectrogram Data (CSV)",
             csv,
             f"spectrogram_{price_area}_{prod_group}_{year}.csv",
             "text/csv",

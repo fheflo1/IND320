@@ -261,8 +261,8 @@ if map_out.get("center"):
 with st.sidebar:
     st.subheader("Selection Info")
 
-    st.write(f"📍 Lat: {st.session_state.clicked_lat or '-'}")
-    st.write(f"📍 Lon: {st.session_state.clicked_lon or '-'}")
+    st.write(f"Lat: {st.session_state.clicked_lat or '-'}")
+    st.write(f"Lon: {st.session_state.clicked_lon or '-'}")
 
     if st.session_state.selected_area:
         st.success(f"Price Area: **{st.session_state.selected_area}**")

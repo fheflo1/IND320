@@ -142,7 +142,7 @@ with col2:
 
 
 # --- Footer info ---
-with st.expander("ℹ️ About the data"):
+with st.expander("About the data"):
     st.markdown(
         """
         **Source:** Elhub API – hourly production data (2021)  
