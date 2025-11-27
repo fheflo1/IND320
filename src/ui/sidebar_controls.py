@@ -4,6 +4,7 @@ from src.app_state import PRICE_AREA_COORDS, AVAILABLE_YEARS, AVAILABLE_MONTHS
 
 def sidebar_controls():
     """Shared sidebar that persists across pages within the same session."""
+    st.sidebar.markdown("---")
     st.sidebar.header("Select Location and Period")
 
     # Session state should already be initialized by init_app_state() in app.py
