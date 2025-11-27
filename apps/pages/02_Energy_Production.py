@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from pymongo import MongoClient
 from pathlib import Path
 import sys
 
@@ -10,36 +9,29 @@ project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
+from src.app_state import init_app_state
 from src.ui.sidebar_controls import sidebar_controls
+
+# Initialize app state (preload data if not already loaded)
+init_app_state()
 
 # --- Shared sidebar state (from all pages) ---
 price_area, city, lat, lon, year, month = sidebar_controls()
 
+# --- Get data from session state ---
+df = st.session_state.production
+if df is None or df.empty:
+    st.error("Production data not available. Please check database connection.")
+    st.stop()
 
-# --- MongoDB client setup ---
-@st.cache_resource
-def get_mongo_client():
-    """Initialize MongoDB client once per session."""
-    return MongoClient(st.secrets["mongo"]["uri"])
+# Ensure required columns exist
+if "starttime" not in df.columns:
+    st.error("Production data missing 'starttime' column.")
+    st.stop()
 
-
-@st.cache_data(ttl=600)
-def load_data():
-    """Load data from MongoDB and return as DataFrame (cached for 10 min)."""
-    client = get_mongo_client()
-    db = client["elhub"]
-    collection = db["production_silver"]
-
-    data = list(collection.find({}, {"_id": 0}))
-    df = pd.DataFrame(data)
-
-    df["starttime"] = pd.to_datetime(df["starttime"])
+df["starttime"] = pd.to_datetime(df["starttime"])
+if "month" not in df.columns:
     df["month"] = df["starttime"].dt.month
-    return df
-
-
-with st.spinner("Loading data from MongoDB..."):
-    df = load_data()
 
 # --- Convert sidebar month (string like "01") → int ---
 try:
