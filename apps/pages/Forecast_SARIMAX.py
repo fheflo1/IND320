@@ -52,9 +52,6 @@ if time_col is None:
 df[time_col] = pd.to_datetime(df[time_col])
 df = df.set_index(time_col).sort_index()
 
-# Duplicate count BEFORE
-st.write("Duplicate timestamps before:", df.index.duplicated().sum())
-
 # ---- Split numeric / categorical
 numeric_df = df.select_dtypes(include="number")
 other_df   = df.select_dtypes(exclude="number")
@@ -71,9 +68,6 @@ numeric_df = numeric_df.resample("H").mean().interpolate()
 other_df   = other_df.resample("H").ffill()
 
 df = pd.concat([numeric_df, other_df], axis=1)
-
-# Duplicate count AFTER
-st.write("Duplicate timestamps after:", df.index.duplicated().sum())
 
 
 # ---------------------------------------------------------
