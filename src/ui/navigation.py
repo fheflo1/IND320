@@ -24,7 +24,7 @@ from streamlit_option_menu import option_menu
 # -------------------------------------------------------------
 PAGE_MAP = {
     "Energy": {
-        "Energy Production": "pages/energy/production.py",
+        "Production & Consumption": "pages/energy/production.py",
         "Production STL & Spectrogram": "pages/energy/stl.py",
         "Sliding Window Correlation": "pages/energy/correlation.py",
     },
@@ -79,7 +79,7 @@ def create_navigation():
             dashboard_page,
         ],
         "Energy": [
-            st.Page("pages/energy/production.py", title="Energy Production", icon="⚡"),
+            st.Page("pages/energy/production.py", title="Production & Consumption", icon="⚡"),
             st.Page(
                 "pages/energy/stl.py", title="Production STL & Spectrogram", icon="📈"
             ),
