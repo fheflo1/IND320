@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 # --- Project imports setup ---
-project_root = Path(__file__).resolve().parents[2]
+project_root = Path(__file__).resolve().parents[3]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
@@ -15,7 +15,6 @@ from src.analysis.anomaly_detection import (
 )
 from src.ui.sidebar_controls import sidebar_controls
 from src.app_state import get_weather, DEFAULT_WEATHER_VARS
-
 
 st.title("Meteo Analyses (Open-Meteo)")
 

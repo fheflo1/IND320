@@ -2,7 +2,17 @@ import streamlit as st
 
 
 def sidebar_controls():
-    """Shared sidebar that persists across pages within the same session."""
+    """
+    Shared sidebar controls that persist across pages within the same session.
+    
+    All selections (price_area, year, month) are stored in st.session_state
+    and will persist when navigating between pages. This means if you select
+    a year on one page, that selection will be maintained when you navigate
+    to another page.
+    
+    Returns:
+        tuple: (price_area, city, lat, lon, year, month)
+    """
     st.sidebar.header("Select Location and Period")
 
     PRICE_AREA_COORDS = {
@@ -15,37 +25,37 @@ def sidebar_controls():
 
     years = [2018, 2019, 2020, 2021, 2022, 2023, 2024]
     months = ["ALL"] + [f"{i:02d}" for i in range(1, 13)]
+    price_areas = list(PRICE_AREA_COORDS.keys())
 
-    # --- Step 1: Prepopulate Streamlit session_state if empty ---
-    # (Only the first time in an app session)
-    if not all(k in st.session_state for k in ["price_area", "year", "month_sel"]):
-        st.session_state["price_area"] = "NO1"
-        st.session_state["year"] = 2021
-        st.session_state["month_sel"] = "01"
+    # Initialize session_state with defaults ONLY if not already set
+    # This ensures selections persist across page navigation
+    if "sidebar_price_area" not in st.session_state:
+        st.session_state.sidebar_price_area = "NO1"
+    if "sidebar_year" not in st.session_state:
+        st.session_state.sidebar_year = 2021
+    if "sidebar_month_sel" not in st.session_state:
+        st.session_state.sidebar_month_sel = "01"
 
-    # --- Step 2: Widgets use the current state values ---
+    # Widgets read from and write to session_state automatically via their keys
+    # No index parameter needed - the session_state value is used
     price_area = st.sidebar.selectbox(
         "Select Price Area",
-        options=list(PRICE_AREA_COORDS.keys()),
-        index=list(PRICE_AREA_COORDS.keys()).index(st.session_state["price_area"]),
-        key="price_area",
+        options=price_areas,
+        key="sidebar_price_area",
     )
     city, lat, lon = PRICE_AREA_COORDS[price_area]
 
     year = st.sidebar.selectbox(
         "Select Year",
         options=years,
-        index=years.index(st.session_state["year"]),
-        key="year",
+        key="sidebar_year",
     )
 
     month = st.sidebar.selectbox(
         "Select Month",
         options=months,
-        index=months.index(st.session_state["month_sel"]),
-        key="month_sel",
+        key="sidebar_month_sel",
         format_func=lambda x: "All months" if x == "ALL" else x,
     )
 
-    # --- Step 3: Return consistent values ---
     return price_area, city, lat, lon, year, month
