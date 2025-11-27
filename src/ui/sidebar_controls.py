@@ -16,36 +16,29 @@ def sidebar_controls():
     years = [2018, 2019, 2020, 2021, 2022, 2023, 2024]
     months = ["ALL"] + [f"{i:02d}" for i in range(1, 13)]
 
-    # --- Step 1: Prepopulate Streamlit session_state if empty ---
-    # (Only the first time in an app session)
-    if not all(k in st.session_state for k in ["price_area", "year", "month_sel"]):
-        st.session_state["price_area"] = "NO1"
-        st.session_state["year"] = 2021
-        st.session_state["month_sel"] = "01"
-
-    # --- Step 2: Widgets use the current state values ---
+    # Use unique keys that don't conflict with session_state initialization
+    # The widgets will use these keys directly without pre-setting session_state
     price_area = st.sidebar.selectbox(
         "Select Price Area",
         options=list(PRICE_AREA_COORDS.keys()),
-        index=list(PRICE_AREA_COORDS.keys()).index(st.session_state["price_area"]),
-        key="price_area",
+        index=0,  # Default to NO1
+        key="sidebar_price_area",
     )
     city, lat, lon = PRICE_AREA_COORDS[price_area]
 
     year = st.sidebar.selectbox(
         "Select Year",
         options=years,
-        index=years.index(st.session_state["year"]),
-        key="year",
+        index=years.index(2021),  # Default to 2021
+        key="sidebar_year",
     )
 
     month = st.sidebar.selectbox(
         "Select Month",
         options=months,
-        index=months.index(st.session_state["month_sel"]),
-        key="month_sel",
+        index=1,  # Default to "01"
+        key="sidebar_month_sel",
         format_func=lambda x: "All months" if x == "ALL" else x,
     )
 
-    # --- Step 3: Return consistent values ---
     return price_area, city, lat, lon, year, month
