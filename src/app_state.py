@@ -24,7 +24,7 @@ def init_app_state():
     """
     Initialize app-wide session state with default values.
     Call this exactly once in apps/app.py before any page loads.
-    
+
     Sets up:
     - price_area, year, month_sel for sidebar controls
     - clicked_lat, clicked_lon for map coordinates
@@ -34,50 +34,33 @@ def init_app_state():
     # Sidebar selection defaults
     if "price_area" not in st.session_state:
         st.session_state["price_area"] = "NO1"
-    
+
     if "year" not in st.session_state:
         st.session_state["year"] = 2021
-    
+
     if "month_sel" not in st.session_state:
         st.session_state["month_sel"] = "01"
-    
+
     # Map coordinate state
     if "clicked_lat" not in st.session_state:
         st.session_state["clicked_lat"] = None
-    
+
     if "clicked_lon" not in st.session_state:
         st.session_state["clicked_lon"] = None
-    
+
     # Map selection state
     if "selected_area" not in st.session_state:
         st.session_state["selected_area"] = None
-    
+
     if "selected_fid" not in st.session_state:
         st.session_state["selected_fid"] = None
-    
+
     # Map viewport state
     if "center_lat" not in st.session_state:
         st.session_state["center_lat"] = 65.0
-    
+
     if "center_lon" not in st.session_state:
         st.session_state["center_lon"] = 15.0
-    
+
     if "zoom" not in st.session_state:
         st.session_state["zoom"] = 5
-
-
-def get_coords_for_price_area(price_area: str) -> tuple:
-    """
-    Get city name and coordinates for a price area.
-    
-    Parameters
-    ----------
-    price_area : str
-        Price area code (e.g., "NO1", "NO2", etc.)
-    
-    Returns
-    -------
-    tuple
-        (city_name, latitude, longitude)
-    """
-    return PRICE_AREA_COORDS.get(price_area, PRICE_AREA_COORDS["NO1"])
