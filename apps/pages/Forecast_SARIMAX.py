@@ -228,3 +228,7 @@ if st.button("Run Forecast"):
     ))
 
     st.plotly_chart(fig, use_container_width=True)
+
+# Model summary
+    st.subheader("Model Summary")
+    st.text(model.summary().as_text()) 
