@@ -37,12 +37,16 @@ data_source = st.radio("Select dataset", ["Production", "Consumption"], horizont
 if data_source == "Production":
     df = st.session_state.get("production")
     if df is None or df.empty:
-        st.error("Production data not available. Please check that the app has been initialized.")
+        st.error(
+            "Production data not available. Please check that the app has been initialized."
+        )
         st.stop()
 else:
     df = st.session_state.get("consumption")
     if df is None or df.empty:
-        st.error("Consumption data not available. Please check that the app has been initialized.")
+        st.error(
+            "Consumption data not available. Please check that the app has been initialized."
+        )
         st.stop()
 
 df = df.copy()
@@ -171,7 +175,9 @@ if st.button("Run Forecast"):
         st.info(f"Fetching ERA5 weather for {city} ({lat}, {lon})...")
 
         try:
-            weather_df = get_weather(area, str(start_date), str(end_date), variables=weather_selected)
+            weather_df = get_weather(
+                area, str(start_date), str(end_date), variables=weather_selected
+            )
             weather_df.index = weather_df.index.tz_convert(None)
             df = df.join(weather_df, how="left").interpolate().sort_index()
         except Exception as e:

@@ -42,7 +42,9 @@ def load_energy_cached(energy_type):
     key = "production" if energy_type == "Production" else "consumption"
     df = st.session_state.get(key)
     if df is None or df.empty:
-        st.error(f"{energy_type} data not available. Please check that the app has been initialized.")
+        st.error(
+            f"{energy_type} data not available. Please check that the app has been initialized."
+        )
         st.stop()
     return df.copy()
 
@@ -117,7 +119,7 @@ try:
 except Exception as e:
     st.error(f"Could not load weather data: {e}")
     st.stop()
-    
+
 df_m = df_m.set_index("time").sort_index()
 df_m = df_m.apply(pd.to_numeric, errors="coerce").resample("1H").mean().ffill()
 df_m = df_m[~df_m.index.duplicated()]

@@ -38,7 +38,9 @@ end_date = (pd.Timestamp(start_date) + pd.offsets.MonthEnd(1)).strftime("%Y-%m-%
 # ----------------------------------------------------------
 # Meteo - use get_weather from app_state
 try:
-    meteo_df = get_weather(price_area, start_date, end_date, variables=DEFAULT_WEATHER_VARS)
+    meteo_df = get_weather(
+        price_area, start_date, end_date, variables=DEFAULT_WEATHER_VARS
+    )
     meteo_df = meteo_df.reset_index().rename(columns={"index": "time"})
     meteo_df["time"] = pd.to_datetime(meteo_df["time"])
     if not meteo_df.empty:
@@ -53,7 +55,9 @@ except Exception as e:
 # Elhub - use session_state
 elhub_df = st.session_state.get("production")
 if elhub_df is None or elhub_df.empty:
-    st.error("Production data not available. Please check that the app has been initialized.")
+    st.error(
+        "Production data not available. Please check that the app has been initialized."
+    )
     st.stop()
 
 elhub_df = elhub_df.copy()

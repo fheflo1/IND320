@@ -129,11 +129,11 @@ def normalize_varname(name: str) -> str:
 # Color mapping — consistent across both modes
 # ============================================================
 COLOR_MAP = {
-    "temperature": "#DF0000",      
-    "windspeed": "#F93A8D",        
-    "windgusts": "#7D3CFF",        
-    "precipitation": "#004BA1",   
-    "winddirection": "#404040",    
+    "temperature": "#DF0000",
+    "windspeed": "#F93A8D",
+    "windgusts": "#7D3CFF",
+    "precipitation": "#004BA1",
+    "winddirection": "#404040",
 }
 
 
@@ -287,8 +287,6 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
     )
 
     return fig
-
-
 
 
 # STL decomposition plot function
