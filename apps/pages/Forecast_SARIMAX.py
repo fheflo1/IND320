@@ -181,6 +181,7 @@ if st.button("Run Forecast"):
     y, X = prepare_data(df, target, str(start_date), str(end_date), exog_cols)
 
     st.write("Fitting model…")
+    st.subheader("Forecast Results")
     model = fit_sarimax(y, X, order, seasonal_order)
 
     # Build future exog
