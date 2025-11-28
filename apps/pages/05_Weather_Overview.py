@@ -24,7 +24,7 @@ st.title("Weather Overview")
 st.info(f"Weather data for {city} ({price_area})")
 
 # --- Tabs for different views ---
-tab_data, tab_plots = st.tabs(["Data", "Plots"])
+tab_plot, tab_data = st.tabs(["Plot", "Data"])
 
 # --- Prepare date range ---
 if month == "ALL":
@@ -48,50 +48,11 @@ if df.empty:
     st.stop()
 
 
-# ==============================================================================
-# TAB 1: Data View
-# ==============================================================================
-with tab_data:
-    st.subheader(f"Raw Weather Data for {city} ({price_area}) — {year}-{month}")
-    st.dataframe(df.head(100), use_container_width=True)
-
-    # --- Line Chart Table View ---
-    st.subheader(f"Line Chart View — {city}, {year}-{month}")
-
-    numeric_cols = df.select_dtypes(include="number").columns.tolist()
-
-    # Convert dataframe to "column/value list" format for display
-    df_rows = []
-    for col in numeric_cols:
-        df_rows.append({"variable": col, "values": df[col].tolist()})
-    df_rows = pd.DataFrame(df_rows)
-
-    st.dataframe(
-        df_rows,
-        column_config={
-            "variable": st.column_config.TextColumn("Variable", width="small"),
-            "values": st.column_config.LineChartColumn(
-                "Time Series (hourly)",
-                help="Hourly values for the selected period",
-                width="large",
-            ),
-        },
-        hide_index=True,
-        use_container_width=True,
-        height=1035,
-        row_height=200,
-    )
-
-    st.caption(
-        f"Data shown for **{city} ({price_area})**, year **{year}**, month **{month}**. "
-        "Includes temperature, precipitation, wind speed, gusts, and direction from the Open-Meteo API."
-    )
-
 
 # ==============================================================================
-# TAB 2: Plots View
+# TAB 1: Plot View
 # ==============================================================================
-with tab_plots:
+with tab_plot:
     st.subheader(f"Weather Data for {city} ({price_area}) – {year}")
 
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
@@ -151,4 +112,44 @@ with tab_plots:
     st.caption(
         "**Tip:** Select *Normalize* to compare variable shapes on a single scale. "
         "In *Auto-axes*, temperature, wind, precipitation, and wind direction each get their own axes."
+    )
+
+
+# ==============================================================================
+# TAB 2: Data View
+# ==============================================================================
+with tab_data:
+    st.subheader(f"Raw Weather Data for {city} ({price_area}) — {year}-{month}")
+    st.dataframe(df.head(100), use_container_width=True)
+
+    # --- Line Chart Table View ---
+    st.subheader(f"Line Chart View — {city}, {year}-{month}")
+
+    numeric_cols = df.select_dtypes(include="number").columns.tolist()
+
+    # Convert dataframe to "column/value list" format for display
+    df_rows = []
+    for col in numeric_cols:
+        df_rows.append({"variable": col, "values": df[col].tolist()})
+    df_rows = pd.DataFrame(df_rows)
+
+    st.dataframe(
+        df_rows,
+        column_config={
+            "variable": st.column_config.TextColumn("Variable", width="small"),
+            "values": st.column_config.LineChartColumn(
+                "Time Series (hourly)",
+                help="Hourly values for the selected period",
+                width="large",
+            ),
+        },
+        hide_index=True,
+        use_container_width=True,
+        height=1035,
+        row_height=200,
+    )
+
+    st.caption(
+        f"Data shown for **{city} ({price_area})**, year **{year}**, month **{month}**. "
+        "Includes temperature, precipitation, wind speed, gusts, and direction from the Open-Meteo API."
     )
