@@ -9,12 +9,12 @@ import streamlit as st
 # ---------------------------------------------------------
 @st.cache_resource
 def get_mongo_client():
-    USR, PWD = open("No_sync/MongoDB").read().splitlines()
-    uri = (
-        "mongodb+srv://{}:{}@ind320-cluster-fh.93gnbd4.mongodb.net/"
-        "?retryWrites=true&w=majority&appName=IND320-cluster-fh"
-    )
-    return MongoClient(uri.format(USR, PWD))
+    """
+    Create a cached MongoDB client using credentials from Streamlit secrets.
+    Works locally and on Streamlit Cloud.
+    """
+    uri = st.secrets["mongo"]["uri"]
+    return MongoClient(uri)
 
 
 # ---------------------------------------------------------
