@@ -9,46 +9,52 @@ from pathlib import Path
 import sys
 
 # ---------------------------------------------------------
-# Project imports
+# Project imports setup
 # ---------------------------------------------------------
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from src.ui.sidebar_controls import sidebar_controls
+# We intentionally DO NOT import sidebar_controls here
+# to avoid drawing a price-area selector on this page.
 
 
 # ---------------------------------------------------------
 # Page setup
 # ---------------------------------------------------------
 st.set_page_config(layout="wide")
-st.title("Price Areas – Interactive Map (Leaflet)")
-
-
-def get_production():
-    """Get production data from session state."""
-    df = st.session_state.get("production")
-    if df is None or df.empty:
-        st.error(
-            "Production data not available. Please check that the app has been initialized."
-        )
-        st.stop()
-    return df.copy()
-
-
-def get_consumption():
-    """Get consumption data from session state."""
-    df = st.session_state.get("consumption")
-    if df is None or df.empty:
-        st.error(
-            "Consumption data not available. Please check that the app has been initialized."
-        )
-        st.stop()
-    return df.copy()
+st.title("Price Areas – Interactive Map")
 
 
 # ---------------------------------------------------------
-# Load GeoJSON
+# Utility helpers
+# ---------------------------------------------------------
+def normalize_pa(code: str | None) -> str | None:
+    """Normalize price-area code: remove spaces, keep None as None."""
+    if code is None:
+        return None
+    return str(code).replace(" ", "")
+
+
+def get_data(dfname: str) -> pd.DataFrame:
+    """Get a dataframe from session_state and fail fast if missing."""
+    df = st.session_state.get(dfname)
+    if df is None or df.empty:
+        st.error(f"{dfname.capitalize()} data not available. Please initialize the app.")
+        st.stop()
+    return df.copy()
+
+
+def get_production() -> pd.DataFrame:
+    return get_data("production")
+
+
+def get_consumption() -> pd.DataFrame:
+    return get_data("consumption")
+
+
+# ---------------------------------------------------------
+# Load GeoJSON (cached)
 # ---------------------------------------------------------
 @st.cache_data
 def load_geojson():
@@ -60,261 +66,256 @@ geojson_data = load_geojson()
 
 
 # ---------------------------------------------------------
-# Build polygon index + centroid lookup
+# Build polygon index + centroids (cached, using NORMALIZED codes)
 # ---------------------------------------------------------
 @st.cache_data
 def build_polygon_index(gj):
     polys = []
     centroids = {}
-    id2name = {}
-
+    norm_to_raw = {}
     for feat in gj["features"]:
-        fid = feat["properties"]["ElSpotOmr"]
+        raw = feat["properties"]["ElSpotOmr"]
+        fid = normalize_pa(raw)
         geom = shape(feat["geometry"])
-
         polys.append((fid, geom))
-        centroids[fid] = (geom.centroid.y, geom.centroid.x)  # lat, lon
-        id2name[fid] = fid
+        centroids[fid] = (geom.centroid.y, geom.centroid.x)
+        norm_to_raw[fid] = raw
+    return polys, centroids, norm_to_raw
 
-    return polys, centroids, id2name
 
-
-polygons, centroids, id_to_name = build_polygon_index(geojson_data)
+polygons, centroids, norm_to_raw = build_polygon_index(geojson_data)
 
 
 def find_price_area(lon, lat):
     pt = Point(lon, lat)
     for fid, poly in polygons:
         if poly.contains(pt) or poly.touches(pt):
-            return fid
+            return fid  # normalized id
     return None
 
 
 # ---------------------------------------------------------
-# Session-state defaults (clean and consistent)
+# Session-state defaults
 # ---------------------------------------------------------
-if "selected_area" not in st.session_state:
-    st.session_state.selected_area = None
-
-if "selected_fid" not in st.session_state:
-    st.session_state.selected_fid = None
-
-if "clicked_lat" not in st.session_state:
-    st.session_state.clicked_lat = None
-
-if "clicked_lon" not in st.session_state:
-    st.session_state.clicked_lon = None
-
-# Map viewport state
-if "center_lat" not in st.session_state:
-    st.session_state.center_lat = 65.0
-
-if "center_lon" not in st.session_state:
-    st.session_state.center_lon = 15.0
-
-if "zoom" not in st.session_state:
-    st.session_state.zoom = 5
+defaults = {
+    "selected_area": None,   # normalized code like "NO5"
+    "clicked_lat": None,
+    "clicked_lon": None,
+}
+for key, val in defaults.items():
+    st.session_state.setdefault(key, val)
 
 
 # ---------------------------------------------------------
-# Sidebar controls
+# Sidebar: ONLY analysis controls, no price-area selector
 # ---------------------------------------------------------
-price_area_sidebar, city, lat_sel, lon_sel, year, month = sidebar_controls()
+with st.sidebar:
+    st.header("Analysis Settings")
 
-# Manual selection override
-if price_area_sidebar != st.session_state.selected_area:
-    st.session_state.selected_area = price_area_sidebar
-    st.session_state.clicked_lat = None
-    st.session_state.clicked_lon = None
+    data_type = st.selectbox("Data Type", ["Production", "Consumption"])
+    df_groups = get_production() if data_type == "Production" else get_consumption()
 
-    # Move map to centroid
-    if st.session_state.selected_area in centroids:
-        st.session_state.center_lat, st.session_state.center_lon = centroids[
-            st.session_state.selected_area
-        ]
+    # Normalize pricearea column once
+    df_groups = df_groups.copy()
+    df_groups["pricearea"] = df_groups["pricearea"].apply(normalize_pa)
+
+    all_groups = sorted(df_groups["group"].dropna().unique())
+    group_choice = st.selectbox("Select Group", all_groups)
+
+    days_back = st.slider("Time Interval (days)", 1, 365, 30)
 
 
 # ---------------------------------------------------------
-# User choice controls for choropleth coloring
+# Compute area means for choropleth (cached)
 # ---------------------------------------------------------
-data_type = st.sidebar.selectbox("Data Type", ["Production", "Consumption"])
+@st.cache_data
+def compute_area_mean(df: pd.DataFrame, group: str, days_back: int) -> pd.DataFrame:
+    """Compute mean kWh per pricearea for a given group and time window."""
+    df = df.copy()
+    df["starttime"] = pd.to_datetime(df["starttime"])
 
-df_groups = get_production() if data_type == "Production" else get_consumption()
-all_groups = sorted(df_groups["group"].dropna().unique())
+    latest_time = df["starttime"].max()
+    cutoff = latest_time - pd.Timedelta(days=days_back)
 
-group_choice = st.sidebar.selectbox("Select Group", all_groups)
+    df_filtered = df[(df["group"] == group) & (df["starttime"] >= cutoff)]
 
-days_back = st.sidebar.slider("Time Interval (days)", 1, 365, 30)
+    area_mean = (
+        df_filtered.groupby("pricearea")["quantitykwh"]
+        .mean()
+        .reset_index()
+        .rename(columns={"quantitykwh": "mean_kwh"})
+    )
+    return area_mean
 
-latest_time = df_groups["starttime"].max()
-cutoff = latest_time - pd.Timedelta(days=days_back)
 
-df_filtered = df_groups[
-    (df_groups["group"] == group_choice) & (df_groups["starttime"] >= cutoff)
-]
-
-area_mean = (
-    df_filtered.groupby("pricearea")["quantitykwh"]
-    .mean()
-    .reset_index()
-    .rename(columns={"quantitykwh": "mean_kwh"})
-)
-
+area_mean = compute_area_mean(df_groups, group_choice, days_back)
 mean_lookup = dict(zip(area_mean["pricearea"], area_mean["mean_kwh"]))
 
-colormap = cm.linear.YlOrRd_09.scale(
-    area_mean["mean_kwh"].min(), area_mean["mean_kwh"].max()
-)
+
+# ---------------------------------------------------------
+# Cached colormap
+# ---------------------------------------------------------
+@st.cache_resource
+def build_colormap(vmin, vmax):
+    return cm.linear.YlOrRd_09.scale(vmin, vmax)
+
+
+if not area_mean.empty:
+    colormap = build_colormap(area_mean["mean_kwh"].min(), area_mean["mean_kwh"].max())
+else:
+    colormap = build_colormap(0, 1)  # fallback
 
 
 def style_area(feature):
-    pa = feature["properties"]["ElSpotOmr"]
-    value = mean_lookup.get(pa)
-
-    if value is None:
+    raw_pa = feature["properties"]["ElSpotOmr"]
+    pa = normalize_pa(raw_pa)
+    val = mean_lookup.get(pa)
+    if val is None:
         return {"fillOpacity": 0, "color": "orange", "weight": 1}
-
     return {
-        "fillColor": colormap(value),
-        "fillOpacity": 0.5,
+        "fillColor": colormap(val),
+        "fillOpacity": 0.6,
         "color": "white",
         "weight": 1,
     }
 
 
 # ---------------------------------------------------------
-# Build Leaflet Map
+# Create base map
 # ---------------------------------------------------------
-m = folium.Map(
-    location=[st.session_state.center_lat, st.session_state.center_lon],
-    zoom_start=st.session_state.zoom,
-    tiles="OpenStreetMap",  # first try: CartoDB dark_matter. Like this better: OpenStreetMap
-)
+def create_base_map(geojson_data):
+    # Center either on selected area or on Norway as default
+    if st.session_state.selected_area and st.session_state.selected_area in centroids:
+        center = centroids[st.session_state.selected_area]
+    else:
+        center = (65.0, 15.0)
 
-# Choropleth - disable highlight completely to remove blue highlight box
-folium.GeoJson(
-    geojson_data,
-    name="Choropleth",
-    style_function=style_area,
-    highlight_function=lambda feat: {
-        "weight": 0,
-        "fillOpacity": 0,
-        "color": "transparent",
-    },
-    tooltip=folium.GeoJsonTooltip(
-        fields=["ElSpotOmr"],
-        aliases=["Price Area:"],
-        labels=True,
-    ),
-).add_to(m)
+    m = folium.Map(
+        location=list(center),
+        zoom_start=5,
+        tiles="OpenStreetMap",
+    )
 
-# Selected area outline (red)
-if st.session_state.selected_fid:
-    selected_features = [
-        f
-        for f in geojson_data["features"]
-        if f["properties"]["ElSpotOmr"] == st.session_state.selected_fid
-    ]
+    # Base boundaries without hover highlight (no blue box)
     folium.GeoJson(
-        {"type": "FeatureCollection", "features": selected_features},
-        style_function=lambda f: {
-            "fillColor": "#00000000",
-            "color": "red",
-            "weight": 3,
-        },
-        highlight_function=lambda x: {
-            "weight": 0,
-            "fillOpacity": 0,
-            "color": "transparent",
-        },
+        geojson_data,
+        name="Price Areas",
+        style_function=lambda f: {"color": "white", "weight": 1, "fillOpacity": 0},
+        highlight_function=lambda x: {"weight": 0},
     ).add_to(m)
 
-# Click marker
-if st.session_state.clicked_lat is not None:
-    folium.Marker(
-        location=[st.session_state.clicked_lat, st.session_state.clicked_lon],
-        icon=folium.Icon(color="red"),
-    ).add_to(m)
+    return m
 
 
 # ---------------------------------------------------------
-# Render map - only return last_clicked to reduce reruns
-# This improves click reliability by preventing zoom/pan from
-# triggering script reruns that interfere with click detection
+# Add dynamic layers (choropleth + selected border + marker)
 # ---------------------------------------------------------
+def add_dynamic_layers(m):
+    """Add colored polygons, selected area outline, and click marker."""
+
+    # Choropleth with tooltip showing price area
+    folium.GeoJson(
+        geojson_data,
+        name="Choropleth",
+        style_function=style_area,
+        tooltip=folium.GeoJsonTooltip(
+            fields=["ElSpotOmr"],
+            aliases=["Price Area:"],
+            labels=True,
+        ),
+    ).add_to(m)
+
+    # Selected area border (match normalized id to raw feature id)
+    if st.session_state.selected_area:
+        sel_norm = st.session_state.selected_area
+        sel_features = [
+            f
+            for f in geojson_data["features"]
+            if normalize_pa(f["properties"]["ElSpotOmr"]) == sel_norm
+        ]
+        if sel_features:
+            folium.GeoJson(
+                {"type": "FeatureCollection", "features": sel_features},
+                style_function=lambda f: {
+                    "fillColor": "#00000000",
+                    "color": "red",
+                    "weight": 3,
+                },
+            ).add_to(m)
+
+    # Click marker (pointer)
+    if st.session_state.clicked_lat is not None and st.session_state.clicked_lon is not None:
+        folium.Marker(
+            location=[st.session_state.clicked_lat, st.session_state.clicked_lon],
+            icon=folium.Icon(color="red"),
+        ).add_to(m)
+
+    return m
+
+
+# ---------------------------------------------------------
+# Render the dynamic map
+#   returned_objects only has "last_clicked"
+#   → panning/zooming does NOT trigger reruns.
+#   → app reruns only when user clicks.
+# ---------------------------------------------------------
+base_map = create_base_map(geojson_data)
+dynamic_map = add_dynamic_layers(base_map)
+
 map_out = st_folium(
-    m,
-    height=900,
+    dynamic_map,
+    height=850,
     use_container_width=True,
-    key="leaflet_map",
+    key="folium_map",
     returned_objects=["last_clicked"],
 )
 
-
 # ---------------------------------------------------------
-# Update states - only update on actual click events
+# Update state from map click
 # ---------------------------------------------------------
-clicked = map_out.get("last_clicked")
-if clicked:
-    new_lat = clicked["lat"]
-    new_lon = clicked["lng"]
+if map_out.get("last_clicked"):
+    lat = map_out["last_clicked"]["lat"]
+    lon = map_out["last_clicked"]["lng"]
 
-    # Only update state if this is a new click location
-    # This prevents reruns when the click hasn't changed
-    # Note: explicit None checks handle initial state
-    if (
-        st.session_state.clicked_lat is None
-        or st.session_state.clicked_lon is None
-        or st.session_state.clicked_lat != new_lat
-        or st.session_state.clicked_lon != new_lon
-    ):
-        st.session_state.clicked_lat = new_lat
-        st.session_state.clicked_lon = new_lon
+    if (lat, lon) != (st.session_state.clicked_lat, st.session_state.clicked_lon):
+        st.session_state.clicked_lat = lat
+        st.session_state.clicked_lon = lon
 
-        found_fid = find_price_area(new_lon, new_lat)
-        st.session_state.selected_fid = found_fid
-
-        # Also update the selected_area to sync with sidebar
-        if found_fid:
-            st.session_state.selected_area = found_fid
+        area_norm = find_price_area(lon, lat)  # normalized id (e.g. "NO5")
+        st.session_state.selected_area = area_norm
 
 
 # ---------------------------------------------------------
-# Sidebar Info
+# Sidebar Info (no price area selector, just info)
 # ---------------------------------------------------------
 with st.sidebar:
     st.subheader("Selection Info")
-
     st.write(f"Lat: {st.session_state.clicked_lat or '-'}")
     st.write(f"Lon: {st.session_state.clicked_lon or '-'}")
 
     if st.session_state.selected_area:
-        st.success(f"Price Area: **{st.session_state.selected_area}**")
+        raw_label = norm_to_raw.get(st.session_state.selected_area, st.session_state.selected_area)
+        st.success(f"Price Area: **{raw_label}**")
     else:
-        st.error("No price area selected")
+        st.info("Click on the map to select a price area.")
 
 
 # ---------------------------------------------------------
-# Load & show energy data
+# ENERGY TABLE (Only show relevant type, after click)
 # ---------------------------------------------------------
-st.subheader("Energy Data for Selected Price Area")
+st.subheader(f"{data_type} Data for Selected Price Area")
 
 if not st.session_state.selected_area:
-    st.info("Select a price area")
+    st.info("Click on the map to select a price area.")
 else:
-    pa = st.session_state.selected_area
+    pa_norm = st.session_state.selected_area
 
-    df_prod = get_production()
-    df_con = get_consumption()
-
-    df_prod_sel = df_prod[
-        (df_prod["pricearea"] == pa) & (df_prod["group"] == group_choice)
+    # Use the SAME normalized pricearea column as earlier
+    df_sel = df_groups[
+        (df_groups["pricearea"] == pa_norm) & (df_groups["group"] == group_choice)
     ]
 
-    df_con_sel = df_con[(df_con["pricearea"] == pa) & (df_con["group"] == group_choice)]
-
-    st.write("### Production")
-    st.dataframe(df_prod_sel, use_container_width=True)
-
-    st.write("### Consumption")
-    st.dataframe(df_con_sel, use_container_width=True)
+    if df_sel.empty:
+        st.warning(f"No {data_type.lower()} data available for this area and group.")
+    else:
+        st.dataframe(df_sel, use_container_width=True)
