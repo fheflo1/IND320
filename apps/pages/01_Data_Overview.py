@@ -38,7 +38,9 @@ if month.upper() == "ALL":
 else:
     try:
         start_date = f"{year}-{month}-01"
-        end_date = (pd.Timestamp(start_date) + pd.offsets.MonthEnd(1)).strftime("%Y-%m-%d")
+        end_date = (pd.Timestamp(start_date) + pd.offsets.MonthEnd(1)).strftime(
+            "%Y-%m-%d"
+        )
     except Exception:
         start_date = f"{year}-{month}-01"
         end_date = f"{year}-{month}-28"
@@ -48,7 +50,9 @@ else:
 # Load WEATHER
 # ----------------------------------------------------------
 try:
-    meteo_df = get_weather(price_area, start_date, end_date, variables=DEFAULT_WEATHER_VARS)
+    meteo_df = get_weather(
+        price_area, start_date, end_date, variables=DEFAULT_WEATHER_VARS
+    )
     meteo_df = meteo_df.reset_index().rename(columns={"index": "time"})
     meteo_df["time"] = pd.to_datetime(meteo_df["time"])
 
@@ -96,11 +100,13 @@ if "consumptiongroup" not in cons_df.columns and "group" in cons_df.columns:
     cons_df["consumptiongroup"] = cons_df["group"]
 
 # Filter base
-prod_filtered = prod_df[(prod_df["pricearea"] == price_area) &
-                        (prod_df["starttime"].dt.year == int(year))]
+prod_filtered = prod_df[
+    (prod_df["pricearea"] == price_area) & (prod_df["starttime"].dt.year == int(year))
+]
 
-cons_filtered = cons_df[(cons_df["pricearea"] == price_area) &
-                        (cons_df["starttime"].dt.year == int(year))]
+cons_filtered = cons_df[
+    (cons_df["pricearea"] == price_area) & (cons_df["starttime"].dt.year == int(year))
+]
 
 if month != "ALL":
     prod_filtered = prod_filtered[prod_filtered["month"] == int(month)]
@@ -116,7 +122,9 @@ if meteo_daily.empty:
     st.warning("No weather data available for this selection.")
 else:
     avg_row = meteo_daily.mean()
-    numeric_cols = [c for c in avg_row.index if pd.api.types.is_numeric_dtype(avg_row[c])]
+    numeric_cols = [
+        c for c in avg_row.index if pd.api.types.is_numeric_dtype(avg_row[c])
+    ]
 
     # Label
     if month.upper() == "ALL":
@@ -131,7 +139,7 @@ else:
 
     # ----- Force all widgets in one single tight row -----
     n = len(numeric_cols)
-    cols = st.columns(n, gap="small")   # gap = compact spacing
+    cols = st.columns(n, gap="small")  # gap = compact spacing
 
     for i, col_name in enumerate(numeric_cols):
         val = avg_row[col_name]
@@ -161,13 +169,13 @@ with col_left:
         # ALL MONTHS
         if month == "ALL":
             monthly_totals = (
-                prod_filtered.groupby("month")["quantitykwh"]
-                .sum()
-                .sort_index()
+                prod_filtered.groupby("month")["quantitykwh"].sum().sort_index()
             )
 
             total_prod = monthly_totals.sum()
-            st.metric("Total annual production", f"{total_prod:,.0f} kWh")  # ⬅️ MOVED ABOVE
+            st.metric(
+                "Total annual production", f"{total_prod:,.0f} kWh"
+            )  # ⬅️ MOVED ABOVE
 
             st.bar_chart(monthly_totals)
 
@@ -180,7 +188,9 @@ with col_left:
             )
 
             total_prod = grouped.sum()
-            st.metric(f"Total production in {month_label}", f"{total_prod:,.0f} kWh")  # ⬅️ MOVED ABOVE
+            st.metric(
+                f"Total production in {month_label}", f"{total_prod:,.0f} kWh"
+            )  # ⬅️ MOVED ABOVE
 
             st.bar_chart(grouped)
 
@@ -195,13 +205,13 @@ with col_right:
         # ALL MONTHS
         if month == "ALL":
             monthly_totals = (
-                cons_filtered.groupby("month")["quantitykwh"]
-                .sum()
-                .sort_index()
+                cons_filtered.groupby("month")["quantitykwh"].sum().sort_index()
             )
 
             total_cons = monthly_totals.sum()
-            st.metric("Total annual consumption", f"{total_cons:,.0f} kWh")  # ⬅️ MOVED ABOVE
+            st.metric(
+                "Total annual consumption", f"{total_cons:,.0f} kWh"
+            )  # ⬅️ MOVED ABOVE
 
             st.bar_chart(monthly_totals)
 
@@ -214,10 +224,11 @@ with col_right:
             )
 
             total_cons = grouped.sum()
-            st.metric(f"Total consumption in {month_label}", f"{total_cons:,.0f} kWh")  # ⬅️ MOVED ABOVE
+            st.metric(
+                f"Total consumption in {month_label}", f"{total_cons:,.0f} kWh"
+            )  # ⬅️ MOVED ABOVE
 
             st.bar_chart(grouped)
-
 
 
 # ==========================================================
@@ -282,8 +293,12 @@ delta_text = None
 if month == "ALL":
     prev_year = int(year) - 1
 
-    prev_prod = prod_df[(prod_df["pricearea"] == price_area) & (prod_df["year"] == prev_year)]
-    prev_cons = cons_df[(cons_df["pricearea"] == price_area) & (cons_df["year"] == prev_year)]
+    prev_prod = prod_df[
+        (prod_df["pricearea"] == price_area) & (prod_df["year"] == prev_year)
+    ]
+    prev_cons = cons_df[
+        (cons_df["pricearea"] == price_area) & (cons_df["year"] == prev_year)
+    ]
 
     if not prev_prod.empty and not prev_cons.empty:
         prev_balance = prev_prod["quantitykwh"].sum() - prev_cons["quantitykwh"].sum()
@@ -304,13 +319,17 @@ else:
         prev_month = current_month - 1
         prev_year = int(year)
 
-    prev_prod = prod_df[(prod_df["pricearea"] == price_area) &
-                        (prod_df["year"] == prev_year) &
-                        (prod_df["month"] == prev_month)]
+    prev_prod = prod_df[
+        (prod_df["pricearea"] == price_area)
+        & (prod_df["year"] == prev_year)
+        & (prod_df["month"] == prev_month)
+    ]
 
-    prev_cons = cons_df[(cons_df["pricearea"] == price_area) &
-                        (cons_df["year"] == prev_year) &
-                        (cons_df["month"] == prev_month)]
+    prev_cons = cons_df[
+        (cons_df["pricearea"] == price_area)
+        & (cons_df["year"] == prev_year)
+        & (cons_df["month"] == prev_month)
+    ]
 
     if not prev_prod.empty and not prev_cons.empty:
         prev_balance = prev_prod["quantitykwh"].sum() - prev_cons["quantitykwh"].sum()
@@ -335,7 +354,9 @@ if delta_value is not None:
             period_suffix = "last year"
         else:
             period_suffix = "last month"
-        delta_text = f"{delta_value:,.0f} kWh ({delta_percent:.1f}%) from {period_suffix}"
+        delta_text = (
+            f"{delta_value:,.0f} kWh ({delta_percent:.1f}%) from {period_suffix}"
+        )
     else:
         delta_text = f"{delta_value:,.0f} kWh"
 else:
@@ -350,7 +371,6 @@ c1.metric(
     delta=delta_text,
     delta_color=delta_color,
 )
-
 
 
 # ==========================================================
@@ -382,4 +402,6 @@ with summary_cols[1]:
     )
     st.write("Consumption records:", len(cons_df))
 
-st.caption("Tip: Use the sidebar to change year, area, or month — everything updates automatically.")
+st.caption(
+    "Tip: Use the sidebar to change year, area, or month — everything updates automatically."
+)

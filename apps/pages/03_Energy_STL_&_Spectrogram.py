@@ -23,8 +23,8 @@ with st.sidebar:
     energy_type = st.radio(
         "Energy Type",
         ["Production", "Consumption"],
-        index=0,                 # Production default
-        horizontal=False
+        index=0,  # Production default
+        horizontal=False,
     )
 
 
@@ -83,7 +83,9 @@ CATEGORY_ORDER = {
 }
 
 order = CATEGORY_ORDER.get(group_col, [])
-ordered_groups = [g for g in order if g in groups] + [g for g in groups if g not in order]
+ordered_groups = [g for g in order if g in groups] + [
+    g for g in groups if g not in order
+]
 
 
 # =========================================================

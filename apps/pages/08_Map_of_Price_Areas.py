@@ -40,7 +40,9 @@ def get_data(dfname: str) -> pd.DataFrame:
     """Get a dataframe from session_state and fail fast if missing."""
     df = st.session_state.get(dfname)
     if df is None or df.empty:
-        st.error(f"{dfname.capitalize()} data not available. Please initialize the app.")
+        st.error(
+            f"{dfname.capitalize()} data not available. Please initialize the app."
+        )
         st.stop()
     return df.copy()
 
@@ -98,7 +100,7 @@ def find_price_area(lon, lat):
 # Session-state defaults
 # ---------------------------------------------------------
 defaults = {
-    "selected_area": None,   # normalized code like "NO5"
+    "selected_area": None,  # normalized code like "NO5"
     "clicked_lat": None,
     "clicked_lon": None,
 }
@@ -244,7 +246,10 @@ def add_dynamic_layers(m):
             ).add_to(m)
 
     # Click marker (pointer)
-    if st.session_state.clicked_lat is not None and st.session_state.clicked_lon is not None:
+    if (
+        st.session_state.clicked_lat is not None
+        and st.session_state.clicked_lon is not None
+    ):
         folium.Marker(
             location=[st.session_state.clicked_lat, st.session_state.clicked_lon],
             icon=folium.Icon(color="red"),
@@ -326,7 +331,6 @@ with st.sidebar:
             """,
             unsafe_allow_html=True,
         )
-
 
 
 # ---------------------------------------------------------

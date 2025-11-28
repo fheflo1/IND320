@@ -20,7 +20,9 @@ price_area, city, lat, lon, year, month = sidebar_controls()
 
 df_prod = st.session_state.get("production")
 if df_prod is None or df_prod.empty:
-    st.error("Production data not available. Please check that the app has been initialized.")
+    st.error(
+        "Production data not available. Please check that the app has been initialized."
+    )
     st.stop()
 
 df_prod = df_prod.copy()
@@ -41,26 +43,35 @@ except Exception:
 # Month names for titles
 month_names = {
     0: "All year",
-    1: "January", 2: "February", 3: "March", 4: "April",
-    5: "May", 6: "June", 7: "July", 8: "August",
-    9: "September", 10: "October", 11: "November", 12: "December",
+    1: "January",
+    2: "February",
+    3: "March",
+    4: "April",
+    5: "May",
+    6: "June",
+    7: "July",
+    8: "August",
+    9: "September",
+    10: "October",
+    11: "November",
+    12: "December",
 }
 
 # --- Consistent color mapping for all charts ---
 COLOR_MAP = {
-    "hydro": "#2E8B92",      # teal
-    "thermal": "#E6B800",    # yellow
-    "solar": "#E68A00",      # orange
-    "other": "#CBA0FF",      # soft purple
-    "wind": "#009991",       # additional color for wind
+    "hydro": "#2E8B92",  # teal
+    "thermal": "#E6B800",  # yellow
+    "solar": "#E68A00",  # orange
+    "other": "#CBA0FF",  # soft purple
+    "wind": "#009991",  # additional color for wind
 }
 # Same colors for consumption groups
 COLOR_MAP_CON = {
-    "household": "#2E8B92",   # teal
-    "cabin": "#E6B800",       # yellow
-    "primary": "#E68A00",     # orange
-    "secondary": "#CBA0FF",   # soft purple
-    "tertiary": "#009991",    # additional color for tertiary
+    "household": "#2E8B92",  # teal
+    "cabin": "#E6B800",  # yellow
+    "primary": "#E68A00",  # orange
+    "secondary": "#CBA0FF",  # soft purple
+    "tertiary": "#009991",  # additional color for tertiary
 }
 
 CATEGORY_ORDER = {
@@ -71,6 +82,7 @@ CATEGORY_ORDER = {
 # --- Session defaults ---
 if "selected_groups_prod" not in st.session_state:
     st.session_state.selected_groups_prod = sorted(df_prod["productiongroup"].unique())
+
 
 # --- Filtering helper ---
 def get_filtered(df, group_col, selected_groups):
@@ -94,7 +106,9 @@ col1, col2 = st.columns(2)
 with col1:
     st.subheader("Total Production by Energy Source")
 
-    filtered = get_filtered(df_prod, "productiongroup", st.session_state.selected_groups_prod)
+    filtered = get_filtered(
+        df_prod, "productiongroup", st.session_state.selected_groups_prod
+    )
     pie_data = filtered.groupby("productiongroup")["quantitykwh"].sum().reset_index()
 
     fig_pie = px.pie(
@@ -113,7 +127,9 @@ with col2:
     st.subheader("Production Trends")
 
     available_groups = [
-        g for g in CATEGORY_ORDER["productiongroup"] if g in df_prod["productiongroup"].unique()
+        g
+        for g in CATEGORY_ORDER["productiongroup"]
+        if g in df_prod["productiongroup"].unique()
     ]
 
     selected_groups_prod = st.pills(
@@ -145,10 +161,12 @@ with col2:
 
 # Footer
 with st.expander("About the data (Production)"):
-    st.markdown("""
+    st.markdown(
+        """
         **Source:** Elhub API – hourly production data (2021)  
         Data processed in Spark and stored in MongoDB (`production_silver`)  
-    """)
+    """
+    )
 
 
 # ------------------------------------------------------------
@@ -160,7 +178,9 @@ st.header("Consumption Overview")
 
 df_cons = st.session_state.get("consumption")
 if df_cons is None or df_cons.empty:
-    st.error("Consumption data not available. Please check that the app has been initialized.")
+    st.error(
+        "Consumption data not available. Please check that the app has been initialized."
+    )
     st.stop()
 
 df_cons = df_cons.copy()
@@ -180,7 +200,9 @@ col3, col4 = st.columns(2)
 with col3:
     st.subheader("Total Consumption by Energy Source")
 
-    filtered = get_filtered(df_cons, "consumptiongroup", st.session_state.selected_groups_cons)
+    filtered = get_filtered(
+        df_cons, "consumptiongroup", st.session_state.selected_groups_cons
+    )
     pie_data = filtered.groupby("consumptiongroup")["quantitykwh"].sum().reset_index()
 
     fig_pie = px.pie(
@@ -199,7 +221,9 @@ with col4:
     st.subheader("Consumption Trends")
 
     available_groups = [
-        g for g in CATEGORY_ORDER["consumptiongroup"] if g in df_cons["consumptiongroup"].unique()
+        g
+        for g in CATEGORY_ORDER["consumptiongroup"]
+        if g in df_cons["consumptiongroup"].unique()
     ]
 
     selected_groups_cons = st.pills(
@@ -230,7 +254,9 @@ with col4:
 
 
 with st.expander("About the data (Consumption)"):
-    st.markdown("""
+    st.markdown(
+        """
         **Source:** Elhub API – hourly consumption data (2021)  
         Data processed in Spark and stored in MongoDB (`consumption_silver`)
-    """)
+    """
+    )
