@@ -18,3 +18,4 @@ seaborn
 folium
 streamlit_folium
 shapely
+streamlit-option-menu

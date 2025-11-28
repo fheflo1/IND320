@@ -85,7 +85,9 @@ def prepare_first_month_table(df: pd.DataFrame) -> pd.DataFrame:
     return df_rows, first_month
 
 
+# ============================================================
 # Weather variable groups for selection
+# ============================================================
 GROUPS = {
     "temp": {
         "label": "Temperature (°C)",
@@ -106,10 +108,50 @@ GROUPS = {
 }
 
 
-# Weather plot function
+# ============================================================
+# Robust variable name normalizer
+# ============================================================
+def normalize_varname(name: str) -> str:
+    """Normalize variable names for consistent matching."""
+    return (
+        name.lower()
+        .replace(" ", "")
+        .replace("(", "")
+        .replace(")", "")
+        .replace("/", "")
+        .replace("_10m", "")
+        .replace("2m", "")
+        .replace("m/s", "")
+    )
+
+
+# ============================================================
+# Color mapping — consistent across both modes
+# ============================================================
+COLOR_MAP = {
+    "temperature": "#DF0000",
+    "windspeed": "#F93A8D",
+    "windgusts": "#7D3CFF",
+    "precipitation": "#004BA1",
+    "winddirection": "#404040",
+}
+
+
+def get_color(varname: str):
+    norm = normalize_varname(varname)
+    for key, col in COLOR_MAP.items():
+        if key in norm:
+            return col
+    return "#222222"  # fallback dark gray
+
+
+# ============================================================
+# Main plotting function
+# ============================================================
 def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
     """
     Interactive weather plot with clean axis management.
+    Colors must be consistent in both auto-scale and normalized modes.
     """
     if df.empty or not cols:
         fig = go.Figure()
@@ -118,7 +160,9 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
 
     fig = go.Figure()
 
+    # ------------------------------------------------------------
     # Normalize if requested
+    # ------------------------------------------------------------
     if mode.startswith("Normalize") and method:
         df_norm = df.copy()
         for c in cols:
@@ -133,13 +177,19 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
     else:
         df_plot = df
 
+    # ------------------------------------------------------------
     # Assign roles to variables
+    # ------------------------------------------------------------
     precip_vars = [c for c in cols if "precip" in c.lower()]
     dir_vars = [c for c in cols if "direction" in c.lower()]
     main_vars = [c for c in cols if c not in precip_vars + dir_vars]
 
-    # --- Auto-axes mode ---
+    # ------------------------------------------------------------
+    # AUTO-AXES MODE
+    # ------------------------------------------------------------
     if not mode.startswith("Normalize"):
+
+        # Main line variables
         for c in main_vars:
             fig.add_trace(
                 go.Scatter(
@@ -147,23 +197,28 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
                     y=df_plot[c],
                     mode="lines",
                     name=c,
-                    line=dict(width=1.5),
+                    line=dict(
+                        width=1.5,
+                        color=get_color(c),
+                    ),
                     yaxis="y1",
                 )
             )
 
+        # Precipitation
         for c in precip_vars:
             fig.add_trace(
                 go.Bar(
                     x=df_plot["time"],
                     y=df_plot[c],
                     name=c,
-                    marker_color="deepskyblue",
-                    opacity=0.4,
+                    marker_color=get_color(c),
+                    opacity=0.45,
                     yaxis="y2",
                 )
             )
 
+        # Wind direction
         for c in dir_vars:
             fig.add_trace(
                 go.Scatter(
@@ -171,7 +226,11 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
                     y=df_plot[c],
                     name=c,
                     mode="lines",
-                    line=dict(width=1, dash="dot", color="orange"),
+                    line=dict(
+                        width=1,
+                        dash="dot",
+                        color=get_color(c),
+                    ),
                     yaxis="y3",
                 )
             )
@@ -183,18 +242,20 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
                 overlaying="y",
                 side="right",
                 showgrid=False,
-                position=0.94,  # just inside plot area
+                position=0.94,
             ),
             yaxis3=dict(
                 title="Wind Direction (°)",
                 overlaying="y",
                 side="right",
                 showgrid=False,
-                position=1.0,  # aligned at far right edge
+                position=1.00,
             ),
         )
 
-    # --- Normalized mode ---
+    # ------------------------------------------------------------
+    # NORMALIZED MODE
+    # ------------------------------------------------------------
     else:
         for c in cols:
             fig.add_trace(
@@ -203,17 +264,23 @@ def plot_weather(df, cols, month_label, mode="Auto-axes", method=None):
                     y=df_plot[c],
                     mode="lines",
                     name=c,
-                    line=dict(width=1.5),
+                    line=dict(
+                        width=1.5,
+                        color=get_color(c),  # <-- Consistent colors here
+                    ),
                 )
             )
+
         fig.update_layout(yaxis=dict(title="Normalized scale"))
 
-    # --- Common layout ---
+    # ------------------------------------------------------------
+    # COMMON LAYOUT
+    # ------------------------------------------------------------
     fig.update_layout(
         title=f"Weather Variables — {month_label}",
         template="plotly_white",
         xaxis_title="Time",
-        legend=dict(orientation="h", y=-0.3),
+        legend=dict(orientation="h", y=-0.25),
         height=600,
         margin=dict(l=60, r=80, t=80, b=50),
         barmode="overlay",
