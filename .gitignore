@@ -210,7 +210,7 @@ __marimo__/
 No_sync/
 
 # Streamlit 
-.streamlit/
+secrets.toml
 
 # VSCode
 .vscode/
