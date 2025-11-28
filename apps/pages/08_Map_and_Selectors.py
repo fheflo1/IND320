@@ -191,12 +191,16 @@ m = folium.Map(
     tiles="OpenStreetMap",  # first try: CartoDB dark_matter. Like this better: OpenStreetMap
 )
 
-# Choropleth
+# Choropleth - disable highlight completely to remove blue highlight box
 folium.GeoJson(
     geojson_data,
     name="Choropleth",
     style_function=style_area,
-    highlight_function=lambda feat: {"weight": 0},
+    highlight_function=lambda feat: {
+        "weight": 0,
+        "fillOpacity": 0,
+        "color": "transparent",
+    },
     tooltip=folium.GeoJsonTooltip(
         fields=["ElSpotOmr"],
         aliases=["Price Area:"],
@@ -218,7 +222,11 @@ if st.session_state.selected_fid:
             "color": "red",
             "weight": 3,
         },
-        highlight_function=lambda x: {"weight": 0},
+        highlight_function=lambda x: {
+            "weight": 0,
+            "fillOpacity": 0,
+            "color": "transparent",
+        },
     ).add_to(m)
 
 # Click marker
@@ -230,33 +238,45 @@ if st.session_state.clicked_lat is not None:
 
 
 # ---------------------------------------------------------
-# Render map
+# Render map - only return last_clicked to reduce reruns
+# This improves click reliability by preventing zoom/pan from
+# triggering script reruns that interfere with click detection
 # ---------------------------------------------------------
 map_out = st_folium(
     m,
     height=900,
-    width="100%",
+    use_container_width=True,
     key="leaflet_map",
-    returned_objects=["last_clicked", "zoom", "center"],
+    returned_objects=["last_clicked"],
 )
 
 
 # ---------------------------------------------------------
-# Update states
+# Update states - only update on actual click events
 # ---------------------------------------------------------
 clicked = map_out.get("last_clicked")
 if clicked:
-    st.session_state.clicked_lat = clicked["lat"]
-    st.session_state.clicked_lon = clicked["lng"]
+    new_lat = clicked["lat"]
+    new_lon = clicked["lng"]
 
-    st.session_state.selected_fid = find_price_area(clicked["lng"], clicked["lat"])
+    # Only update state if this is a new click location
+    # This prevents reruns when the click hasn't changed
+    # Note: explicit None checks handle initial state
+    if (
+        st.session_state.clicked_lat is None
+        or st.session_state.clicked_lon is None
+        or st.session_state.clicked_lat != new_lat
+        or st.session_state.clicked_lon != new_lon
+    ):
+        st.session_state.clicked_lat = new_lat
+        st.session_state.clicked_lon = new_lon
 
-if map_out.get("zoom"):
-    st.session_state.zoom = map_out["zoom"]
+        found_fid = find_price_area(new_lon, new_lat)
+        st.session_state.selected_fid = found_fid
 
-if map_out.get("center"):
-    st.session_state.center_lat = map_out["center"]["lat"]
-    st.session_state.center_lon = map_out["center"]["lng"]
+        # Also update the selected_area to sync with sidebar
+        if found_fid:
+            st.session_state.selected_area = found_fid
 
 
 # ---------------------------------------------------------
