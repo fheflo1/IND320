@@ -172,7 +172,7 @@ def style_area(feature):
     value = mean_lookup.get(pa)
 
     if value is None:
-        return {"fillOpacity": 0, "color": "white", "weight": 1}
+        return {"fillOpacity": 0, "color": "orange", "weight": 1}
 
     return {
         "fillColor": colormap(value),
@@ -188,7 +188,7 @@ def style_area(feature):
 m = folium.Map(
     location=[st.session_state.center_lat, st.session_state.center_lon],
     zoom_start=st.session_state.zoom,
-    tiles="CartoDB dark_matter",
+    tiles="OpenStreetMap",  # first try: CartoDB dark_matter. Like this better: OpenStreetMap
 )
 
 # Choropleth
