@@ -294,10 +294,39 @@ with st.sidebar:
     st.write(f"Lon: {st.session_state.clicked_lon or '-'}")
 
     if st.session_state.selected_area:
-        raw_label = norm_to_raw.get(st.session_state.selected_area, st.session_state.selected_area)
-        st.success(f"Price Area: **{raw_label}**")
+        raw_label = norm_to_raw.get(
+            st.session_state.selected_area, st.session_state.selected_area
+        )
+
+        st.markdown(
+            f"""
+            <div style="
+                padding: 0.4rem 0.6rem;
+                border-radius: 0.5rem;
+                background-color: #99da99ff;
+                color: #08074e;              /* <-- TEXT COLOR HERE */
+                font-weight: 600;
+                ">
+                Price Area: {raw_label}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     else:
-        st.info("Click on the map to select a price area.")
+        st.markdown(
+            """
+            <div style="
+                padding: 0.4rem 0.6rem;
+                border-radius: 0.5rem;
+                background-color: #99da99ff;
+                color: #08074e;              /* <-- TEXT COLOR HERE */
+                ">
+                Click on the map to select a price area.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
 
 
 # ---------------------------------------------------------
