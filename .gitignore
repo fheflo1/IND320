@@ -223,5 +223,4 @@ meteo_bergen_2019.csv
 
 data/plots/
 
-# geojson files
-*.geojson
+
