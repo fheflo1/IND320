@@ -23,15 +23,6 @@
 #codeBackgroundColor = "#2D333B"
 
 
-[server]
-# Tell Streamlit Cloud what the entry point is
-runOnSave = false
-
-[general]
-# This is the important part
-mainModule = "apps/Home.py"
-
-
 [theme]
 primaryColor="#4F7F9E"
 backgroundColor="#a2cba2"
