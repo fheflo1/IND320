@@ -261,8 +261,11 @@ if clicked:
 
     # Only update state if this is a new click location
     # This prevents reruns when the click hasn't changed
+    # Note: explicit None checks handle initial state
     if (
-        st.session_state.clicked_lat != new_lat
+        st.session_state.clicked_lat is None
+        or st.session_state.clicked_lon is None
+        or st.session_state.clicked_lat != new_lat
         or st.session_state.clicked_lon != new_lon
     ):
         st.session_state.clicked_lat = new_lat
