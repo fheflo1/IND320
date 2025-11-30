@@ -21,7 +21,7 @@ def sidebar_controls():
     if not all(k in st.session_state for k in ["price_area", "year", "month_sel"]):
         st.session_state["price_area"] = "NO1"
         st.session_state["year"] = 2021
-        st.session_state["month_sel"] = "01"
+        st.session_state["month_sel"] = "ALL"
 
     # --- Step 2: Widgets use the current state values ---
     price_area = st.sidebar.selectbox(
