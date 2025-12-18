@@ -13,9 +13,12 @@ def detect_temperature_outliers(df, cutoff=0.1, std_thresh=2.0):
     2. Compute SATV = temperature - smoothed.
     3. Compute SPC limits from SATV only.
     4. Outliers = original temperature where SATV is outside SPC limits.
+    5. Provide temperature-domain boundaries (smoothed + LCL/UCL) that
+       define the non-outlier interval for plotting.
 
     Returns:
-        DataFrame with temperature, smoothed, SATV, UCL, LCL, outlier.
+        DataFrame with columns:
+        [time, temperature, smoothed, SATV, UCL, LCL, upper_bound, lower_bound, outlier, inlier]
     """
 
     df = df.copy().dropna(subset=["temperature_2m"])
@@ -27,43 +30,43 @@ def detect_temperature_outliers(df, cutoff=0.1, std_thresh=2.0):
     if n < 20:
         raise ValueError("Not enough data points for SATV/SPC.")
 
-    # -------------------------
     # 1. DCT smoothing (low-pass)
-    # -------------------------
     coeffs = dct(temps, norm="ortho")
     k = int(cutoff * n)
-
     lp = coeffs.copy()
     lp[k:] = 0  # low-pass filter
     smoothed = idct(lp, norm="ortho")
 
-    # -------------------------
     # 2. Compute SATV (high-pass)
-    # -------------------------
     satv = temps - smoothed
 
-    # -------------------------
     # 3. SPC bounds computed on SATV ONLY
-    # -------------------------
     mu = np.mean(satv)
     sigma = np.std(satv)
     UCL = mu + std_thresh * sigma
     LCL = mu - std_thresh * sigma
 
-    # -------------------------
     # 4. Outlier locations (SATV exceeds limits)
-    # -------------------------
     outliers = (satv > UCL) | (satv < LCL)
+    inliers = ~outliers
+
+    # 5. Temperature-domain boundaries for non-outlier interval:
+    #    everything between these is NOT an outlier.
+    lower_bound = smoothed + LCL
+    upper_bound = smoothed + UCL
 
     return pd.DataFrame(
         {
-            "time": df["time"],
+            "time": df["time"].to_numpy(),
             "temperature": temps,
             "smoothed": smoothed,
             "SATV": satv,
-            "UCL": UCL,
-            "LCL": LCL,
+            "UCL": np.full(n, UCL),
+            "LCL": np.full(n, LCL),
+            "upper_bound": upper_bound,
+            "lower_bound": lower_bound,
             "outlier": outliers,
+            "inlier": inliers,
         }
     )
 
