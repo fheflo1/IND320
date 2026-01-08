@@ -48,25 +48,50 @@ with tab1:
     try:
         result = detect_temperature_outliers(df, cutoff, std_thresh)
 
+        lower_bound = result["lower_bound"]
+        upper_bound = result["upper_bound"]
+
+
         fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=result["time"],
-                y=result["temperature"],
-                mode="lines",
-                name="Temperature",
-                line=dict(color="#4c78a8"),
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=result["time"],
-                y=result["smoothed"],
-                mode="lines",
-                name="Smoothed",
-                line=dict(color="#f58518"),
-            )
-        )
+
+        # Temperature line
+        fig.add_trace(go.Scatter(
+            x=result["time"],
+            y=result["temperature"],
+            mode="lines",
+            name="Temperature",
+            line=dict(color="#4c78a8", width=1),
+        ))
+
+        # Smoothed line
+        fig.add_trace(go.Scatter(
+            x=result["time"],
+            y=result["smoothed"],
+            mode="lines",
+            name="Smoothed",
+            line=dict(color="#f58518", width=2),
+        ))
+
+        # --- Transparent SPC band ---
+        fig.add_trace(go.Scatter(
+            x=result["time"],
+            y=upper_bound,
+            mode="lines",
+            name="Upper Bound",
+            line=dict(color="rgba(0,0,255,0.0)"),   # invisible line
+            showlegend=False,
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=result["time"],
+            y=lower_bound,
+            mode="lines",
+            name="SPC Band",
+            fill="tonexty",                         # fills between previous trace
+            fillcolor="rgba(0,0,255,0.15)",         # translucent blue
+            line=dict(color="rgba(0,0,255,0)"),     # invisible boundary line
+        ))
+
 
         # Highlight outliers
         fig.add_trace(
